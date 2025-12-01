@@ -25,6 +25,7 @@ endif()
 
 # Library
 add_library(particlesim STATIC
+    src/particle.cpp
     src/particle_system.cpp
 )
 
@@ -44,10 +45,14 @@ FetchContent_MakeAvailable(googletest)
 enable_testing()
 
 add_executable(particlesim_tests
-    tests/test_particle_basics.cpp
+    tests/test_particle.cpp
 )
 
 target_link_libraries(particlesim_tests PRIVATE gtest_main particlesim)
 
 include(GoogleTest)
 gtest_discover_tests(particlesim_tests)
+
+# Console
+add_executable(particlesim_example examples/console.cpp)
+target_link_libraries(particlesim_example PRIVATE particlesim)
