@@ -1,0 +1,13 @@
+/build
+/*.sln
+*.vcxproj*
+*.user
+*.o
+*.obj
+*.pdb
+*.exe
+*.dll
+*.lib
+*.a
+.idea
+.vscode
