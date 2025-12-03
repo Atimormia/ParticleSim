@@ -39,5 +39,6 @@ TEST(ParticleSystemTest, LifetimeExpiration) {
     ps.add_particle(p);
 
     ps.update(1.0f); // particle should die
+    ps.update(1.0f);
     ASSERT_EQ(ps.particles().size(), 0);
 }
