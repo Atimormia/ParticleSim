@@ -1,4 +1,5 @@
 #pragma once
+#include <sstream>
 namespace math
 {
     struct Vector2D
@@ -36,6 +37,20 @@ namespace math
             x -= other.x;
             y -= other.y;
             return *this;
+        }
+
+        constexpr Vector2D &operator*=(const Vector2D &other)
+        {
+            x *= other.x;
+            y *= other.y;
+            return *this;
+        }
+
+        std::string tostring() const
+        {
+            std::ostringstream ss;
+            ss << "(" << x << "," << y << ")";
+            return ss.str();
         }
     };
 }

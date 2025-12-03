@@ -1,6 +1,7 @@
 #pragma once
 #include "math/vector.hpp"
 #include <type_traits>
+#include <string>
 namespace particlesim
 {
     struct Particle
@@ -14,6 +15,8 @@ namespace particlesim
         void reset();
         void kill();
         void update(float dt);
+
+        std::string tostring() const; 
     };
 
     static_assert(std::is_trivially_copyable_v<Particle>);

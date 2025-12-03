@@ -1,0 +1,41 @@
+{
+  "version": 7,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 20
+  },
+  "configurePresets": [
+    {
+      "name": "dev-msvc",
+      "generator": "Visual Studio 17 2022",
+      "binaryDir": "build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "ENABLE_TRACY": "ON",
+        "ENABLE_BENCHMARKS": "ON",
+        "ENABLE_TESTS": "ON"
+      }
+    },
+    {
+      "name": "release-msvc",
+      "generator": "Visual Studio 17 2022",
+      "binaryDir": "build-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "ENABLE_TRACY": "OFF",
+        "ENABLE_BENCHMARKS": "ON",
+        "ENABLE_TESTS": "OFF"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "dev",
+      "configurePreset": "dev-msvc"
+    },
+    {
+      "name": "release",
+      "configurePreset": "release-msvc"
+    }
+  ]
+}
