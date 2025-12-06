@@ -94,7 +94,8 @@ void ParticleSystemDataSoA::update(float dt, bool compact)
     if (compact)
         compact_dead();
 }
-
+#ifdef NDEBUG
+#else
 std::vector<Particle> ParticleSystemDataSoA::get()
 {
     std::vector<Particle> out;
@@ -120,6 +121,7 @@ std::vector<Particle> ParticleSystemDataSoA::get()
 
     return out;
 }
+#endif
 
 void ParticleSystemDataSoA::compact_dead()
 {
