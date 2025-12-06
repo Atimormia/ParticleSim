@@ -32,10 +32,8 @@ namespace particlesim
         {
             return data.size();
         }
-#ifdef NDEBUG
-#else
+
         std::vector<Particle> get() { return data.get(); }
-#endif
 
     private:
         Layout data;
@@ -49,10 +47,8 @@ namespace particlesim
         void update(float dt, bool compact = false);
         size_t add(const Particle &p);
         size_t size() const;
-#ifdef NDEBUG
-#else
+
         std::vector<Particle> get() { return particles; }
-#endif
 
         std::string tostring() const;
 
@@ -71,10 +67,7 @@ namespace particlesim
 
         void update(float dt, bool compact = false);
 
-#ifdef NDEBUG
-#else
         std::vector<Particle> get();
-#endif
 
     private:
         ParticleSoA particles;
