@@ -34,7 +34,7 @@ Particle generate_particle(
 
 int main()
 {
-    ParticleSystem ps(10000000);
+    ParticleSystem<ParticleSystemDataAoS> ps;
 
     Particle p1;
     p1.velocity.x = 1.0f;
@@ -55,13 +55,13 @@ int main()
         ps.update(1.0f);
     }
 
-    std::cout << ps.tostring() << std::endl;
+    //std::cout << ps.tostring() << std::endl;
 
     for (int i = 0; i < 1'000'000; i++)
     {
         ps.add_particle(generate_particle());
     }
-    std::cout << ps.particles().size() << " particles" << std::endl;
+    std::cout << ps.size() << " particles" << std::endl;
     
     auto result = BenchmarkHelper::run([&]() {
         ps.update(0.016f); // simulate 16ms frame

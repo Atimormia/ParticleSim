@@ -2,6 +2,7 @@
 #include "math/vector.hpp"
 #include <type_traits>
 #include <string>
+#include "soa_container.hpp"
 namespace particlesim
 {
     struct Particle
@@ -16,8 +17,16 @@ namespace particlesim
         void kill();
         void update(float dt);
 
-        std::string tostring() const; 
+        std::string tostring() const;
     };
 
     static_assert(std::is_trivially_copyable_v<Particle>);
+    using ParticleSoA = SoAContainer<
+        SoAFieldVector2D, // 0 - position
+        SoAFieldVector2D, // 1 - velocity
+        SoAFieldVector2D, // 2 - acceleration
+        SoAFieldScalar<float>,        // 3 - lifetime
+        SoAFieldScalar<uint8_t>          // 4 - alive flag
+        >;
+
 } // namespace particlesim
