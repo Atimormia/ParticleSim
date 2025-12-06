@@ -1,0 +1,28 @@
+name: ParticleSim Benchmarks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-benchmark:
+    runs-on: windows-latest  # or ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup CMake
+      uses: jwlawson/actions-setup-cmake@v1
+
+    - name: Install dependencies
+      run: |
+        # Install anything you need, e.g., vcpkg or dependencies
+
+    - name: Configure CMake
+      run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+    - name: Build benchmarks
+      run: cmake --build build --target benchmarks --config Release
+
+    - name: Run benchmarks
+      run: build/benchmarks/Release/particlesim_bench.exe --benchmark_out=benchmark_results.json --benchmark_out_format=json
