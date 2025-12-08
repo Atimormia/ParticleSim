@@ -74,21 +74,36 @@ void ParticleSystemDataSoA::update(float dt, bool compact)
     auto &alive = particles.field<4>();
 
     const size_t n = particles.size();
+    if (n == 0)
+        return;
 
-    for (size_t i = 0; i < n; i++)
+    // raw pointers to contiguous storage - helps optimizer/vectorizer.
+    float *pos_x = pos.data(0);
+    float *pos_y = pos.data(1);
+    float *vel_x = vel.data(0);
+    float *vel_y = vel.data(1);
+    float *acc_x = acc.data(0);
+    float *acc_y = acc.data(1);
+    float *life_p = life.data();
+    uint8_t *alive_p = reinterpret_cast<uint8_t *>(alive.data());
+
+    for (size_t i = 0; i < n; ++i)
     {
-        if (!alive[i])
+        if (alive_p[i] == 0)
             continue;
 
-        vel.x(i) += acc.x(i) * dt;
-        vel.y(i) += acc.y(i) * dt;
+        float vx = vel_x[i] + acc_x[i] * dt;
+        float vy = vel_y[i] + acc_y[i] * dt;
+        vel_x[i] = vx;
+        vel_y[i] = vy;
 
-        pos.x(i) += vel.x(i) * dt;
-        pos.y(i) += vel.y(i) * dt;
+        pos_x[i] += vx * dt;
+        pos_y[i] += vy * dt;
 
-        life[i] -= dt;
-        if (life[i] <= 0.0f)
-            alive[i] = 0;
+        float l = life_p[i] - dt;
+        life_p[i] = l;
+        if (l <= 0.0f)
+            alive_p[i] = 0;
     }
 
     if (compact)

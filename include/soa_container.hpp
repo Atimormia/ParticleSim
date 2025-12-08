@@ -1,7 +1,6 @@
 #pragma once
 #include <vector>
 #include <array>
-#include <tuple>
 
 template<typename T, int Components>
 struct SoAFieldBase
@@ -20,8 +19,8 @@ struct SoAFieldBase
 
     size_t size() const { return storage[0].size(); }
 
-    T& component(int k, size_t i)       { return storage[k][i]; }
-    const T& component(int k, size_t i) const { return storage[k][i]; }
+    T* data(int k) noexcept { return storage[k].data(); }
+    const T* data(int k) const noexcept { return storage[k].data(); }
 };
 
 template<typename T>
@@ -43,6 +42,10 @@ struct SoAFieldScalar : public SoAFieldBase<T,1>
     {
         return Base::storage[0][i];
     }
+
+    T* data() noexcept { return Base::storage[0].data(); }
+    const T* data() const noexcept { return Base::storage[0].data(); }
+
 };
 
 struct SoAFieldVector2D : public SoAFieldBase<float,2>
