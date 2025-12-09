@@ -10,11 +10,12 @@ ParticleSystemDataAoS::ParticleSystemDataAoS(size_t capacity)
 void ParticleSystemDataAoS::update(float dt, bool compact)
 {
     auto it = std::remove_if(particles.begin(), particles.end(), [&](Particle &p)
-                             {
+    {
         if (!p.alive) 
             return true;
         p.update(dt);
-        return !p.alive; });
+        return !p.alive; 
+    });
     if (compact)
         particles.erase(it, particles.end());
 }
@@ -30,6 +31,10 @@ size_t ParticleSystemDataAoS::size() const
     return particles.size();
 }
 
+std::span<const math::Vector2D> particlesim::ParticleSystemDataAoS::positions()
+{
+    return std::span<const math::Vector2D>();
+}
 std::string ParticleSystemDataAoS::tostring() const
 {
     std::stringstream ss;
@@ -108,6 +113,11 @@ void ParticleSystemDataSoA::update(float dt, bool compact)
 
     if (compact)
         compact_dead();
+}
+
+std::span<const math::Vector2D> particlesim::ParticleSystemDataSoA::positions()
+{
+    return std::span<const math::Vector2D>();
 }
 
 std::vector<Particle> ParticleSystemDataSoA::get()
