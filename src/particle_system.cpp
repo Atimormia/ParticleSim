@@ -78,12 +78,12 @@ void ParticleSystemDataSoA::update(float dt, bool compact)
         return;
 
     // raw pointers to contiguous storage - helps optimizer/vectorizer.
-    float *pos_x = pos.data(0);
-    float *pos_y = pos.data(1);
-    float *vel_x = vel.data(0);
-    float *vel_y = vel.data(1);
-    float *acc_x = acc.data(0);
-    float *acc_y = acc.data(1);
+    float *pos_x = pos.x();
+    float *pos_y = pos.y();
+    float *vel_x = vel.x();
+    float *vel_y = vel.y();
+    float *acc_x = acc.x();
+    float *acc_y = acc.y();
     float *life_p = life.data();
     uint8_t *alive_p = reinterpret_cast<uint8_t *>(alive.data());
 
