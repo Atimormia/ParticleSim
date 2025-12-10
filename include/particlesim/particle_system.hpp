@@ -32,7 +32,10 @@ namespace particlesim
         {
             data.update(dt, compact);
             if (partition) 
-                partition->build(data.positions());    
+            {
+                partition->setPositions(data.positions());
+                partition->build();    
+            }
         }
 
         size_t size() const { return data.size(); }

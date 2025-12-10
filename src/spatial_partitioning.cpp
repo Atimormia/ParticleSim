@@ -1,28 +1,121 @@
-#include "spatial_partitioning.hpp"
+#include "particlesim/spatial_partitioning.hpp"
+#include <algorithm>
+#include <assert.h>
 
-particlesim::UniformGrid::UniformGrid(const UniformGridConfig &cfg)
+using namespace particlesim;
+
+UniformGrid::UniformGrid(const UniformGridConfig &cfg): config(cfg), bounds(cfg.world)
 {
-    
+    resizeGrid(cfg.cellSize, cfg.world);
+    neighborBuffer.reserve(cfg.neighborReserve);
 }
 
-void particlesim::UniformGrid::resizeGrid(float newWorldWidth, float newWorldHeight)
+void UniformGrid::resizeGrid(float cellSize, const WorldBounds &world)
 {
+    assert(cellSize > 0.f);
+    config.cellSize = cellSize;
+    bounds = world;
+
+    gridWidth = std::max<int>(1, std::ceil(bounds.width() / config.cellSize));
+    gridHeight = std::max<int>(1, std::ceil(bounds.height() / config.cellSize));
+    ensureBucketsSize();
+    neighborBuffer.reserve(config.neighborReserve);
 }
 
-uint32_t particlesim::UniformGrid::toCellIndex(float x, float y) const
+void UniformGrid::ensureBucketsSize()
 {
-    return 0;
+    buckets.clear();
+    buckets.resize(gridWidth * gridHeight);
 }
 
-void particlesim::UniformGrid::build(std::span<const math::Vector2D> positions)
+void UniformGrid::setPositions(std::span<const math::Vector2D> pos)
 {
+    positions = pos;
 }
 
-std::span<const uint32_t> particlesim::UniformGrid::queryNeighborhood(uint32_t particleID) const
+void UniformGrid::build()
 {
-    return std::span<const uint32_t>();
+    for (auto &b : buckets)
+        b.clear();
+    if (positions.empty())
+        return;
+
+    for (uint32_t i = 0; i < positions.size(); ++i)
+    {
+        auto &p = positions[i];
+        uint32_t idx = toCellIndex(p.x, p.y);
+        buckets[idx].push_back(i);
+    }
 }
 
-void particlesim::UniformGrid::clear()
+uint32_t UniformGrid::toCellIndex(float x, float y) const
 {
+    int cx, cy;
+    worldToCell(x, y, cx, cy);
+    // clamp safety
+    cx = std::clamp(cx, 0, static_cast<int>(gridWidth) - 1);
+    cy = std::clamp(cy, 0, static_cast<int>(gridHeight) - 1);
+    return static_cast<uint32_t>(cy * gridWidth + cx);
+}
+
+void UniformGrid::worldToCell(float x, float y, int &outX, int &outY) const
+{
+    // convert world coordinate to cell coordinate - relative to bounds.min
+    float nx = (x - bounds.minX) / config.cellSize;
+    float ny = (y - bounds.minY) / config.cellSize;
+    outX = static_cast<int>(std::floor(nx));
+    outY = static_cast<int>(std::floor(ny));
+}
+
+std::span<const uint32_t> UniformGrid::queryNeighborhood(uint32_t particleID) const
+{
+    assert(positions.data() != nullptr && "setPositions() must be called before queryNeighborhood()");
+    assert(particleID < positions.size());
+
+    const auto &pos = positions[particleID];
+    int cx, cy;
+    worldToCell(pos.x, pos.y, cx, cy);
+
+    neighborBuffer.clear();
+
+    for (int dy = -1; dy <= 1; ++dy)
+    {
+        int ny = cy + dy;
+        if (ny < 0 || ny >= static_cast<int>(gridHeight))
+            continue;
+        for (int dx = -1; dx <= 1; ++dx)
+        {
+            int nx = cx + dx;
+            if (nx < 0 || nx >= static_cast<int>(gridWidth))
+                continue;
+            uint32_t cellIdx = ny * gridWidth + nx;
+            const auto &bucket = buckets[cellIdx];
+            
+            neighborBuffer.insert(neighborBuffer.end(), bucket.begin(), bucket.end());
+        }
+    }
+
+    if (config.excludeSelfFromQuery)
+    {
+        // buckets are small so linear search is fine
+        for (size_t i = 0; i < neighborBuffer.size(); ++i)
+        {
+            // remove the queried particle from neighborBuffer in-place if present
+            if (neighborBuffer[i] == particleID)
+            {
+                neighborBuffer[i] = neighborBuffer.back();
+                neighborBuffer.pop_back();
+                break;
+            }
+        }
+    }
+
+    return {neighborBuffer.data(), neighborBuffer.size()};
+}
+
+void UniformGrid::clear()
+{
+    for (auto &b : buckets)
+        b.clear();
+    neighborBuffer.clear();
 }
