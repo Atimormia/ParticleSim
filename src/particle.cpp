@@ -1,5 +1,4 @@
 #include "particlesim/particle.hpp"
-#include <sstream>
 
 using namespace particlesim;
 
@@ -30,12 +29,4 @@ void Particle::update(float dt)
     {
         alive = false;
     }
-}
-std::string particlesim::Particle::tostring() const
-{
-    std::ostringstream ss;
-    ss << "Pos: " << position.tostring()
-       << ", Vel: " << velocity.tostring()
-       << ", Acc: " << acceleration.tostring();
-    return ss.str();
 }

@@ -44,14 +44,14 @@ endif()
 # --------------------------
 # Tracy profiler
 # --------------------------
-#if (ENABLE_TRACY)
+if (ENABLE_TRACY)
     FetchContent_Declare(
         tracy
         GIT_REPOSITORY https://github.com/wolfpld/tracy.git
         GIT_TAG master
     )
     FetchContent_MakeAvailable(tracy)
-#endif()
+endif()
 
 # Library
 add_library(particlesim STATIC
@@ -89,6 +89,12 @@ if (ENABLE_TESTS)
 
     include(GoogleTest)
     gtest_discover_tests(particlesim_tests)
+
+    if(ENABLE_COVERAGE)
+    target_compile_options(your_test_target PRIVATE -fprofile-instr-generate -fcoverage-mapping)
+    target_link_options(your_test_target PRIVATE -fprofile-instr-generate)
+endif()
+
 endif()
 
 # Console

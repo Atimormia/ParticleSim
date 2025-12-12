@@ -2,31 +2,35 @@
 #include <vector>
 #include <string>
 #include <span>
+#include <memory>
 
+#include "core/soa_container.hpp"
+#include "core/vector.hpp"
 #include "particle.hpp"
-#include "soa_container.hpp"
 #include "spatial_partitioning.hpp"
-#include "math/vector.hpp"
 
 namespace particlesim
 {
+    using namespace std;
+    using namespace core;
+    
     template <typename T>
     concept ParticleDataContainer = requires(T layout, float dt, const Particle &p) {
-        { layout.update(dt) } -> std::same_as<void>;
-        { layout.size() } -> std::integral;
-        { layout.add(p) } -> std::integral;
-        { layout.positions() } -> std::same_as<std::span<const math::Vector2D>>;
+        { layout.update(dt) } -> same_as<void>;
+        { layout.size() } -> integral;
+        { layout.add(p) } -> integral;
+        { layout.positions() } -> same_as<span<const Vector2D>>;
     };
 
     template <ParticleDataContainer Layout>
     class ParticleSystem
     {
     public:
-        ParticleSystem(size_t capacity = 100000, std::unique_ptr<ISpatialPartition> p = nullptr) : data(capacity), partition(std::move(p)) {}
+        ParticleSystem(size_t capacity = 100000, unique_ptr<ISpatialPartition> p = nullptr) : data(capacity), partition(move(p)) {}
 
-        void setPartition(std::unique_ptr<ISpatialPartition> p) { partition = std::move(p); }
+        void setPartition(unique_ptr<ISpatialPartition> p) { partition = move(p); }
 
-        size_t add_particle(const Particle &p) { return data.add(p); }
+        size_t addParticle(const Particle &p) { return data.add(p); }
 
         void update(float dt, bool compact = false)
         {
@@ -40,11 +44,11 @@ namespace particlesim
 
         size_t size() const { return data.size(); }
 
-        std::vector<Particle> get() { return data.get(); }
+        vector<Particle> get() { return data.get(); }
 
     private:
         Layout data;
-        std::unique_ptr<ISpatialPartition> partition = nullptr;
+        unique_ptr<ISpatialPartition> partition = nullptr;
     };
 
     class ParticleSystemDataAoS
@@ -56,13 +60,11 @@ namespace particlesim
         size_t add(const Particle &p);
         size_t size() const;
 
-        std::span<const math::Vector2D> positions();
-        std::vector<Particle> get() { return particles; }
-
-        std::string tostring() const;
+        span<const Vector2D> positions();
+        vector<Particle> get() { return particles; }
 
     private:
-        std::vector<Particle> particles;
+        vector<Particle> particles;
     };
 
     class ParticleSystemDataSoA
@@ -74,13 +76,12 @@ namespace particlesim
         size_t add(const Particle &p);
         size_t size() const;
         
-        std::span<const math::Vector2D> positions();
-        std::vector<Particle> get();
+        span<const Vector2D> positions();
+        vector<Particle> get();
 
     private:
         ParticleSoA particles;
 
-        void compact_dead();
+        void compactDead();
     };
-
-} // namespace particlesim
+}

@@ -1,9 +1,12 @@
 #pragma once
 #include <span>
 #include <vector>
-#include "math/vector.hpp"
+#include <cstdint>
+#include "core/vector.hpp"
 namespace particlesim
 {
+    using namespace core;
+    using namespace std;
     struct WorldBounds
     {
         float minX = 0.f;
@@ -26,9 +29,9 @@ namespace particlesim
     {
     public:
         virtual ~ISpatialPartition() = default;
-        virtual void setPositions(std::span<const math::Vector2D> positions) = 0;
+        virtual void setPositions(span<const Vector2D> positions) = 0;
         virtual void build() = 0;
-        virtual std::span<const uint32_t> queryNeighborhood(uint32_t particleID) const = 0;
+        virtual span<const uint32_t> queryNeighborhood(uint32_t particleID) const = 0;
         virtual void clear() = 0;
     };
 
@@ -41,9 +44,9 @@ namespace particlesim
         void resizeGrid(float cellSize, const WorldBounds &world);
 
         // ISpatialPartition interface
-        void setPositions(std::span<const math::Vector2D> positions) override;
+        void setPositions(span<const Vector2D> positions) override;
         void build() override;
-        std::span<const uint32_t> queryNeighborhood(uint32_t particleID) const override;
+        span<const uint32_t> queryNeighborhood(uint32_t particleID) const override;
         void clear() override;
 
         uint32_t toCellIndex(float x, float y) const;
@@ -52,12 +55,12 @@ namespace particlesim
     private:
         UniformGridConfig config;
         WorldBounds bounds;
-        std::span<const math::Vector2D> positions = {};
+        span<const Vector2D> positions = {};
         uint32_t gridWidth = 0;
         uint32_t gridHeight = 0;
 
-        std::vector<std::vector<uint32_t>> buckets;
-        mutable std::vector<uint32_t> neighborBuffer;
+        vector<vector<uint32_t>> buckets;
+        mutable vector<uint32_t> neighborBuffer;
 
         void ensureBucketsSize();
     };

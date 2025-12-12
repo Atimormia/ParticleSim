@@ -1,6 +1,8 @@
 #include "particlesim/spatial_partitioning.hpp"
 #include <algorithm>
 #include <assert.h>
+#include <cstdint>
+#include <cmath>
 
 using namespace particlesim;
 
@@ -16,8 +18,8 @@ void UniformGrid::resizeGrid(float cellSize, const WorldBounds &world)
     config.cellSize = cellSize;
     bounds = world;
 
-    gridWidth = std::max<int>(1, std::ceil(bounds.width() / config.cellSize));
-    gridHeight = std::max<int>(1, std::ceil(bounds.height() / config.cellSize));
+    gridWidth = max<int>(1, ceil(bounds.width() / config.cellSize));
+    gridHeight = max<int>(1, ceil(bounds.height() / config.cellSize));
     ensureBucketsSize();
     neighborBuffer.reserve(config.neighborReserve);
 }
@@ -28,7 +30,7 @@ void UniformGrid::ensureBucketsSize()
     buckets.resize(gridWidth * gridHeight);
 }
 
-void UniformGrid::setPositions(std::span<const math::Vector2D> pos)
+void UniformGrid::setPositions(span<const Vector2D> pos)
 {
     positions = pos;
 }
@@ -53,8 +55,8 @@ uint32_t UniformGrid::toCellIndex(float x, float y) const
     int cx, cy;
     worldToCell(x, y, cx, cy);
     // clamp safety
-    cx = std::clamp(cx, 0, static_cast<int>(gridWidth) - 1);
-    cy = std::clamp(cy, 0, static_cast<int>(gridHeight) - 1);
+    cx = clamp(cx, 0, static_cast<int>(gridWidth) - 1);
+    cy = clamp(cy, 0, static_cast<int>(gridHeight) - 1);
     return static_cast<uint32_t>(cy * gridWidth + cx);
 }
 
@@ -63,11 +65,11 @@ void UniformGrid::worldToCell(float x, float y, int &outX, int &outY) const
     // convert world coordinate to cell coordinate - relative to bounds.min
     float nx = (x - bounds.minX) / config.cellSize;
     float ny = (y - bounds.minY) / config.cellSize;
-    outX = static_cast<int>(std::floor(nx));
-    outY = static_cast<int>(std::floor(ny));
+    outX = static_cast<int>(floor(nx));
+    outY = static_cast<int>(floor(ny));
 }
 
-std::span<const uint32_t> UniformGrid::queryNeighborhood(uint32_t particleID) const
+span<const uint32_t> UniformGrid::queryNeighborhood(uint32_t particleID) const
 {
     assert(positions.data() != nullptr && "setPositions() must be called before queryNeighborhood()");
     assert(particleID < positions.size());

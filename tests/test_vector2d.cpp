@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
-#include "math/vector.hpp"
+#include "core/vector.hpp"
 
-using namespace math;
+using namespace core;
 
 TEST(Vector2D, DefaultConstructor) {
     Vector2D v;

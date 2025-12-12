@@ -1,6 +1,10 @@
-#include <benchmark/benchmark.h>
 #include "particlesim/particle_system.hpp"
+#ifdef TRACY_ENABLE
 #include "tracy/Tracy.hpp"
+#else
+#define ZoneScoped
+#endif
+#include "benchmark/benchmark.h"
 
 using namespace particlesim;
 
@@ -12,7 +16,7 @@ void populate_system(ParticleSystem<Layout>& ps, size_t count)
         p.velocity.x = float(i % 100) * 0.01f;
         p.velocity.y = float(i % 50) * 0.01f;
         p.lifetime = 5.0f;
-        ps.add_particle(p);
+        ps.addParticle(p);
     }
 }
 

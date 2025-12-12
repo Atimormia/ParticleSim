@@ -1,6 +1,5 @@
 #pragma once
-#include <sstream>
-namespace math
+namespace core
 {
     struct Vector2D
     {
@@ -46,11 +45,5 @@ namespace math
             return *this;
         }
 
-        std::string tostring() const
-        {
-            std::ostringstream ss;
-            ss << "(" << x << "," << y << ")";
-            return ss.str();
-        }
     };
 }

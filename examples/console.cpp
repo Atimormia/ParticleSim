@@ -46,26 +46,14 @@ int main()
     p3.velocity.x = -0.25f;
     p3.lifetime = 15.0f;
 
-    ps.add_particle(p1);
-    ps.add_particle(p2);
-    ps.add_particle(p3);
+    ps.addParticle(p1);
+    ps.addParticle(p2);
+    ps.addParticle(p3);
 
     for (int i = 0; i < 10; i++)
     {
         ps.update(1.0f);
     }
 
-    //std::cout << ps.tostring() << std::endl;
-
-    for (int i = 0; i < 1'000'000; i++)
-    {
-        ps.add_particle(generate_particle());
-    }
-    std::cout << ps.size() << " particles" << std::endl;
-    
-    auto result = BenchmarkHelper::run([&]() {
-        ps.update(0.016f); // simulate 16ms frame
-    });
-    std::cout << result.tostring() << std::endl;
     return 0;
 }

@@ -20,10 +20,10 @@ TEST(ParticleSystemAoSTest, AddAndSize)
     ParticleSystem<ParticleSystemDataAoS> ps;
     EXPECT_EQ(ps.size(), 0u);
 
-    ps.add_particle(make_test_particle());
+    ps.addParticle(make_test_particle());
     EXPECT_EQ(ps.size(), 1u);
 
-    ps.add_particle(make_test_particle());
+    ps.addParticle(make_test_particle());
     EXPECT_EQ(ps.size(), 2u);
 }
 
@@ -31,7 +31,7 @@ TEST(ParticleSystemAoSTest, EulerIntegration)
 {
     ParticleSystem<ParticleSystemDataAoS> ps;
     Particle p = make_test_particle(1.0f, 0.0f, 0.5f, 0.0f, 1.1f);
-    ps.add_particle(p);
+    ps.addParticle(p);
 
     ps.update(1.0f,true);
 
@@ -47,10 +47,10 @@ TEST(ParticleSystemSoATest, AddAndSize)
     ParticleSystem<ParticleSystemDataSoA> ps;
     EXPECT_EQ(ps.size(), 0u);
 
-    ps.add_particle(make_test_particle());
+    ps.addParticle(make_test_particle());
     EXPECT_EQ(ps.size(), 1u);
 
-    ps.add_particle(make_test_particle());
+    ps.addParticle(make_test_particle());
     EXPECT_EQ(ps.size(), 2u);
 }
 
@@ -58,7 +58,7 @@ TEST(ParticleSystemSoATest, EulerIntegration)
 {
     ParticleSystem<ParticleSystemDataSoA> ps;
     Particle p = make_test_particle(1.0f, 0.0f, 0.5f, 0.0f, 1.1f);
-    ps.add_particle(p);
+    ps.addParticle(p);
 
     ps.update(1.0f,true);
 
@@ -73,7 +73,7 @@ TEST(ParticleSystemTest, LifetimeExpiration)
     ParticleSystem<ParticleSystemDataAoS> ps_aos;
     Particle p1 = make_test_particle();
     p1.lifetime = 0.5f;
-    ps_aos.add_particle(p1);
+    ps_aos.addParticle(p1);
 
     ps_aos.update(1.0f, true);
     EXPECT_EQ(ps_aos.size(), 0u);
@@ -81,7 +81,7 @@ TEST(ParticleSystemTest, LifetimeExpiration)
     ParticleSystem<ParticleSystemDataSoA> ps_soa;
     Particle p2 = make_test_particle();
     p2.lifetime = 0.5f;
-    ps_soa.add_particle(p2);
+    ps_soa.addParticle(p2);
 
     ps_soa.update(1.0f, true);
     EXPECT_EQ(ps_soa.size(), 0u);
@@ -95,8 +95,8 @@ TEST(ParticleSystemTest, MultiStepUpdate)
     for (int i = 0; i < 100; ++i)
     {
         Particle p = make_test_particle(1.0f, 2.0f, 0.1f, 0.2f, 10.0f);
-        ps_aos.add_particle(p);
-        ps_soa.add_particle(p);
+        ps_aos.addParticle(p);
+        ps_soa.addParticle(p);
     }
 
     for (int step = 0; step < 5; ++step)
