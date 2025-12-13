@@ -44,11 +44,11 @@ ParticleSystemDataSoA::ParticleSystemDataSoA(size_t capacity)
 
 size_t ParticleSystemDataSoA::add(const Particle &p)
 {
-    auto &pos = particles.field<0>();
-    auto &vel = particles.field<1>();
-    auto &acc = particles.field<2>();
-    auto &life = particles.field<3>();
-    auto &alive = particles.field<4>();
+    auto &pos = particles.field<Position>();
+    auto &vel = particles.field<Velocity>();
+    auto &acc = particles.field<Acceleration>();
+    auto &life = particles.field<Lifetime>();
+    auto &alive = particles.field<Alive>();
 
     pos.push_back(p.position.x, p.position.y);
     vel.push_back(p.velocity.x, p.velocity.y);
@@ -66,11 +66,11 @@ size_t ParticleSystemDataSoA::size() const
 
 void ParticleSystemDataSoA::update(float dt, bool compact)
 {
-    auto &pos = particles.field<0>();
-    auto &vel = particles.field<1>();
-    auto &acc = particles.field<2>();
-    auto &life = particles.field<3>();
-    auto &alive = particles.field<4>();
+    auto &pos = particles.field<Position>();
+    auto &vel = particles.field<Velocity>();
+    auto &acc = particles.field<Acceleration>();
+    auto &life = particles.field<Lifetime>();
+    auto &alive = particles.field<Alive>();
 
     const size_t n = particles.size();
     if (n == 0)
@@ -119,11 +119,11 @@ vector<Particle> ParticleSystemDataSoA::get()
     vector<Particle> out;
     out.reserve(size());
 
-    auto &pos = particles.field<0>();
-    auto &vel = particles.field<1>();
-    auto &acc = particles.field<2>();
-    auto &life = particles.field<3>();
-    auto &alive = particles.field<4>();
+    auto &pos = particles.field<Position>();
+    auto &vel = particles.field<Velocity>();
+    auto &acc = particles.field<Acceleration>();
+    auto &life = particles.field<Lifetime>();
+    auto &alive = particles.field<Alive>();
 
     for (size_t i = 0; i < size(); i++)
     {
@@ -142,11 +142,11 @@ vector<Particle> ParticleSystemDataSoA::get()
 
 void ParticleSystemDataSoA::compactDead()
 {
-    auto &pos = particles.field<0>();
-    auto &vel = particles.field<1>();
-    auto &acc = particles.field<2>();
-    auto &life = particles.field<3>();
-    auto &alive = particles.field<4>();
+    auto &pos = particles.field<Position>();
+    auto &vel = particles.field<Velocity>();
+    auto &acc = particles.field<Acceleration>();
+    auto &life = particles.field<Lifetime>();
+    auto &alive = particles.field<Alive>();
 
     size_t n = particles.size();
     size_t i = 0;
