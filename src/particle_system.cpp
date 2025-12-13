@@ -159,7 +159,7 @@ void ParticleSystemDataSoA::compactDead()
 
             if (i != last)
             {
-                for (int k = 0; k < 2; ++k)
+                for (int8_t k = 0; k < 2; ++k)
                 {
                     pos.storage[k][i] = pos.storage[k][last];
                     vel.storage[k][i] = vel.storage[k][last];
@@ -169,7 +169,7 @@ void ParticleSystemDataSoA::compactDead()
                 alive.storage[0][i] = alive.storage[0][last];
             }
 
-            for (int k = 0; k < 2; ++k)
+            for (int8_t k = 0; k < 2; ++k)
             {
                 pos.storage[k].pop_back();
                 vel.storage[k].pop_back();

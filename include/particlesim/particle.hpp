@@ -28,10 +28,10 @@ namespace particlesim
 
     static_assert(std::is_trivially_copyable_v<Particle>);
     using ParticleSoA = SoAContainer<
-        SoAFieldVector2D<Position>, // 0 - position
-        SoAFieldVector2D<Velocity>, // 1 - velocity
-        SoAFieldVector2D<Acceleration>, // 2 - acceleration
-        SoAFieldScalar<float, Lifetime>,        // 3 - lifetime
-        SoAFieldScalar<uint8_t,Alive>          // 4 - alive flag
+        SoAFieldVector2D<Position>,
+        SoAFieldVector2D<Velocity>,
+        SoAFieldVector2D<Acceleration>, 
+        SoAFieldScalar<float, Lifetime>,     
+        SoAFieldScalar<uint8_t, Alive>   
         >;
 }
