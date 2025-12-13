@@ -18,7 +18,7 @@ namespace core
 
     template <typename Tag, typename... Fields>
     inline constexpr bool HasField_v =
-    (std::is_same_v<typename Fields::tag, Tag> || ...);
+    (is_same_v<typename Fields::tag, Tag> || ...);
 
     template <typename Tag>
     struct FieldTag
@@ -33,7 +33,7 @@ namespace core
     struct FieldIndex<Tag, First, Rest...>
     {
         static constexpr size_t value =
-            std::is_same_v<typename First::tag, Tag>
+            is_same_v<typename First::tag, Tag>
                 ? 0
                 : 1 + FieldIndex<Tag, Rest...>::value;
     };

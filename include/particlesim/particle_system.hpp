@@ -83,5 +83,15 @@ namespace particlesim
         ParticleSoA particles;
 
         void compactDead();
+        const auto fields() 
+        {
+            return tie(
+                particles.field<Position>(),
+                particles.field<Velocity>(),
+                particles.field<Acceleration>(),
+                particles.field<Lifetime>(),
+                particles.field<Alive>()
+            );
+        }
     };
 }

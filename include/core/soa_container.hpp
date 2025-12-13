@@ -43,7 +43,7 @@ namespace core
         auto &field()
         {
             constexpr size_t index = FieldIndex<Tag, Fields...>::value;
-            return std::get<index>(fields);
+            return get<index>(fields);
         }
 
     private:

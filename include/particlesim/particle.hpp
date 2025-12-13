@@ -8,6 +8,7 @@
 namespace particlesim
 {
     using namespace core;
+    
     struct Position {};
     struct Velocity {};
     struct Acceleration {};
