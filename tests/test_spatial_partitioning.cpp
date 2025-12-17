@@ -7,7 +7,7 @@ using namespace std;
 
 TEST(UniformGrid, InitializesGridCorrectly)
 {
-    UniformGridConfig cfg;
+    PartitioningConfig cfg;
     cfg.cellSize = 10.f;
     cfg.world = {0, 0, 100, 50};
 
@@ -21,7 +21,7 @@ TEST(UniformGrid, InitializesGridCorrectly)
 
 TEST(UniformGrid, SetPositionsStoresSpan)
 {
-    UniformGridConfig cfg;
+    PartitioningConfig cfg;
     UniformGrid grid(cfg);
 
     vector<Vector2D> pos = {{1, 2}, {3, 4}};
@@ -32,7 +32,7 @@ TEST(UniformGrid, SetPositionsStoresSpan)
 
 TEST(UniformGrid, BuildBinsParticlesIntoCorrectCells)
 {
-    UniformGridConfig cfg;
+    PartitioningConfig cfg;
     cfg.cellSize = 10.f;
     cfg.world = {0, 0, 100, 100};
     cfg.excludeSelfFromQuery = false;
@@ -72,7 +72,7 @@ TEST(UniformGrid, BuildBinsParticlesIntoCorrectCells)
 
 TEST(UniformGrid, QueryNeighborhoodReturnsNeighborsIn8ConnectedRegion)
 {
-    UniformGridConfig cfg;
+    PartitioningConfig cfg;
     cfg.cellSize = 10.f;
     cfg.world = {0, 0, 30, 30};
     cfg.excludeSelfFromQuery = false;
@@ -98,7 +98,7 @@ TEST(UniformGrid, QueryNeighborhoodReturnsNeighborsIn8ConnectedRegion)
 
 TEST(UniformGrid, ExcludeSelfRemovesSelfFromResult)
 {
-    UniformGridConfig cfg;
+    PartitioningConfig cfg;
     cfg.excludeSelfFromQuery = true;
 
     UniformGrid grid(cfg);
@@ -117,7 +117,7 @@ TEST(UniformGrid, ExcludeSelfRemovesSelfFromResult)
 
 TEST(UniformGrid, QueryNeighborhoodEdgesDoNotGoOutOfBounds)
 {
-    UniformGridConfig cfg;
+    PartitioningConfig cfg;
     cfg.cellSize = 10.f;
     cfg.world = {0, 0, 30, 30}; 
     cfg.excludeSelfFromQuery = false;
@@ -146,7 +146,7 @@ TEST(UniformGrid, QueryNeighborhoodEdgesDoNotGoOutOfBounds)
 
 TEST(UniformGrid, ResizeGridRebuildsCorrectDimensions)
 {
-    UniformGridConfig cfg;
+    PartitioningConfig cfg;
     cfg.cellSize = 5.f;
     cfg.world = {0, 0, 20, 20};
 
@@ -163,7 +163,7 @@ TEST(UniformGrid, ResizeGridRebuildsCorrectDimensions)
 
 TEST(UniformGrid, ClearEmptiesBucketsAndBuffer)
 {
-    UniformGridConfig cfg;
+    PartitioningConfig cfg;
     UniformGrid grid(cfg);
 
     vector<Vector2D> pos = {{1, 1}, {2, 2}};
@@ -182,7 +182,7 @@ TEST(UniformGrid, ClearEmptiesBucketsAndBuffer)
 
 TEST(UniformGrid, ParticlesOutsideBoundsAreClamped)
 {
-    UniformGridConfig cfg;
+    PartitioningConfig cfg;
     cfg.cellSize = 10.f;
     cfg.world = {0, 0, 100, 100};
 

@@ -17,7 +17,7 @@ namespace particlesim
         float width() const { return maxX - minX; }
         float height() const { return maxY - minY; }
     };
-    struct UniformGridConfig
+    struct PartitioningConfig
     {
         float cellSize = 1.f;// world units per cell
         WorldBounds world = {};// world bounds
@@ -38,7 +38,7 @@ namespace particlesim
     class UniformGrid final : public ISpatialPartition
     {
     public:
-        UniformGrid(const UniformGridConfig &cfg);
+        UniformGrid(const PartitioningConfig &cfg);
 
         // update grid dimensions when world bounds or cellSize change
         void resizeGrid(float cellSize, const WorldBounds &world);
@@ -53,7 +53,7 @@ namespace particlesim
         void worldToCell(float x, float y, int &outX, int &outY) const;
 
     private:
-        UniformGridConfig config;
+        PartitioningConfig config;
         WorldBounds bounds;
         span<const Vector2D> positions = {};
         uint32_t gridWidth = 0;
@@ -63,6 +63,25 @@ namespace particlesim
         mutable vector<uint32_t> neighborBuffer;
 
         void ensureBucketsSize();
+    };
+
+    class NoPartition final : public ISpatialPartition
+    {
+    public:
+        explicit NoPartition(const PartitioningConfig &cfg) : config(cfg) { neighborBuffer.reserve(cfg.neighborReserve);}
+
+        void setPositions(span<const Vector2D> pos) override { positions = pos;}
+
+        void build() override {}
+
+        span<const uint32_t> queryNeighborhood(uint32_t particleID) const override;
+
+        void clear() override { neighborBuffer.clear();}
+
+    private:
+        PartitioningConfig config;
+        span<const Vector2D> positions = {};
+        mutable vector<uint32_t> neighborBuffer;
     };
 
 }

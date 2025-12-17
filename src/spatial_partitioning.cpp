@@ -6,7 +6,7 @@
 
 using namespace particlesim;
 
-UniformGrid::UniformGrid(const UniformGridConfig &cfg): config(cfg), bounds(cfg.world)
+UniformGrid::UniformGrid(const PartitioningConfig &cfg) : config(cfg), bounds(cfg.world)
 {
     resizeGrid(cfg.cellSize, cfg.world);
     neighborBuffer.reserve(cfg.neighborReserve);
@@ -92,7 +92,7 @@ span<const uint32_t> UniformGrid::queryNeighborhood(uint32_t particleID) const
                 continue;
             uint32_t cellIdx = ny * gridWidth + nx;
             const auto &bucket = buckets[cellIdx];
-            
+
             neighborBuffer.insert(neighborBuffer.end(), bucket.begin(), bucket.end());
         }
     }
@@ -120,4 +120,20 @@ void UniformGrid::clear()
     for (auto &b : buckets)
         b.clear();
     neighborBuffer.clear();
+}
+
+span<const uint32_t> particlesim::NoPartition::queryNeighborhood(uint32_t particleID) const
+{
+    neighborBuffer.clear();
+
+    const uint32_t count = static_cast<uint32_t>(positions.size());
+    for (uint32_t i = 0; i < count; ++i)
+    {
+        if (config.excludeSelfFromQuery && i == particleID)
+            continue;
+
+        neighborBuffer.push_back(i);
+    }
+
+    return neighborBuffer;
 }
