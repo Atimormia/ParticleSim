@@ -1,66 +1,86 @@
 #pragma once
 #include <cstddef>
+#include "particlesim/particle.hpp"
+#include <array>
+#include <stdexcept>
+#include <assert.h>
 namespace particlesim
 {
-    class IAllocator
+    class ParticlePoolAllocator
     {
     public:
-        virtual ~IAllocator() = default;
-        virtual void *allocate(size_t size, size_t alignment = alignof(std::max_align_t)) = 0;
-        virtual void deallocate(void *ptr) = 0;
-    };
-
-    class PoolAllocator : public IAllocator
-    {
-    public:
-        PoolAllocator(size_t blocksNum, size_t blockSize) : blocksNum_(blocksNum), blockSize_(blockSize)
+        ParticlePoolAllocator(size_t particleCount) : particleCount_(particleCount)
         {
-            if (blockSize_ < sizeof(void *))
-            {
-                blockSize_ = sizeof(void *);
-            }
-            memoryBlock_ = new char[blocksNum_ * blockSize_];
+            if (particleCount_ <= 0)
+                throw std::invalid_argument("ParticlePoolAllocator requires positive particle count");
 
-            head = memoryBlock_;
-            char *current = head;
-            for (size_t i = 0; i < blocksNum_ - 1; ++i)
+            memoryBlocks_ = new MemoryBlock[particleCount_]{};
+            head_ = 0;
+
+            for (size_t i = 0; i < particleCount_ - 1; ++i)
             {
-                char *next = current + blockSize_;
-                *reinterpret_cast<void **>(current) = next;
-                current = next;
+                memoryBlocks_[i].next = i + 1;
             }
-            *reinterpret_cast<void **>(current) = nullptr; // last block points to nullptr
-        };
-        ~PoolAllocator()
+            memoryBlocks_[particleCount_ - 1].next = -1; // end of free list
+        }
+        ~ParticlePoolAllocator()
         {
-            delete[] memoryBlock_;
+            delete[] memoryBlocks_;
         };
 
-        void *allocate(size_t size, size_t alignment = alignof(std::max_align_t)) override
+        Particle *allocate()
         {
-            if (size > blockSize_ || head == nullptr)
+            if (head_ < 0 || head_ >= particleCount_)
             {
-                return nullptr;
-            }
-            void *ptr = head;
-            head = *reinterpret_cast<char **>(head); // move head to next free block
-            return ptr;
-        };
-        void deallocate(void *ptr) override
-        {
-            if (ptr == nullptr)
-            {
-                return;
+                throw std::bad_alloc();
             }
 
-            *reinterpret_cast<void **>(ptr) = head;
-            head = static_cast<char *>(ptr);
-        };
+            Particle *current = &memoryBlocks_[head_].particle;
+            memoryBlocks_[head_].inUse = true;
+            head_ = memoryBlocks_[head_].next;
+            return current;
+        }
+
+        void deallocate(Particle *particle)
+        {
+            if (particle == nullptr)
+                throw std::invalid_argument("Cannot deallocate nullptr");
+
+            MemoryBlock *blockPtr = reinterpret_cast<MemoryBlock *>(
+                reinterpret_cast<char *>(particle) - offsetof(MemoryBlock, particle));
+            if (blockPtr < memoryBlocks_ || blockPtr >= memoryBlocks_ + particleCount_)
+            {
+                throw std::invalid_argument("Pointer not from this allocator");
+            }
+            
+
+            MemoryBlock *ptr = reinterpret_cast<MemoryBlock *>(particle);
+
+            assert(ptr->inUse && "Double free detected");
+
+            ptr->next = head_;
+            head_ = ptr - memoryBlocks_;
+            ptr->inUse = false;
+        }
+
+        size_t capacity() const
+        {
+            return particleCount_;
+        }
 
     private:
-        char *memoryBlock_ = nullptr;
-        size_t blocksNum_ = 0;
-        size_t blockSize_ = 0;
-        char *head = nullptr;
+        static constexpr size_t INVALID_INDEX = static_cast<size_t>(-1);
+        struct MemoryBlock
+        {
+            Particle particle{};
+            size_t next = INVALID_INDEX;
+            bool inUse = false;
+        };
+
+        const size_t particleCount_ = 0;
+        MemoryBlock *memoryBlocks_ = nullptr;
+
+        size_t head_ = INVALID_INDEX;
     };
+
 }
