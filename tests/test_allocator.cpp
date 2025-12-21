@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "particlesim/allocator.hpp"
+#include "particlesim/particle.hpp"
 
 using namespace particlesim;
 

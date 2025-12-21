@@ -44,7 +44,7 @@ namespace particlesim
 
         size_t size() const { return data.size(); }
 
-        vector<Particle> get() { return data.get(); }
+        ParticleAoSVector get() { return data.get(); }
 
     private:
         Layout data;
@@ -61,10 +61,10 @@ namespace particlesim
         size_t size() const;
 
         span<const Vector2D> positions();
-        vector<Particle> get() { return particles; }
+        ParticleAoSVector get() { return particles; }
 
     private:
-        vector<Particle> particles;
+        ParticleAoSVector particles;
     };
 
     class ParticleSystemDataSoA
@@ -77,7 +77,7 @@ namespace particlesim
         size_t size() const;
         
         span<const Vector2D> positions();
-        vector<Particle> get();
+        ParticleAoSVector get();
 
     private:
         ParticleSoA particles;

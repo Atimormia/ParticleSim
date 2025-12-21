@@ -5,6 +5,8 @@
 using namespace particlesim;
 ParticleSystemDataAoS::ParticleSystemDataAoS(size_t capacity)
 {
+    ParticlePoolAllocator alloc(capacity);
+    particles = ParticleAoSVector(capacity, alloc);
     particles.reserve(capacity);
 }
 
@@ -23,7 +25,7 @@ void ParticleSystemDataAoS::update(float dt, bool compact)
 
 size_t ParticleSystemDataAoS::add(const Particle &p)
 {
-    particles.push_back(p);
+    particles.emplace_back(p);
     return particles.size() - 1;
 }
 
@@ -106,9 +108,9 @@ span<const Vector2D> particlesim::ParticleSystemDataSoA::positions()
     return span<const Vector2D>();
 }
 
-vector<Particle> ParticleSystemDataSoA::get()
+ParticleAoSVector ParticleSystemDataSoA::get()
 {
-    vector<Particle> out;
+    ParticleAoSVector out;
     out.reserve(size());
 
     auto& [pos, vel, acc, life, alive] = fields();

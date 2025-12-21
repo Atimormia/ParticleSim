@@ -18,8 +18,8 @@ void UniformGrid::resizeGrid(float cellSize, const WorldBounds &world)
     config.cellSize = cellSize;
     bounds = world;
 
-    gridWidth = max<int>(1, ceil(bounds.width() / config.cellSize));
-    gridHeight = max<int>(1, ceil(bounds.height() / config.cellSize));
+    gridWidth = max<int>(1, static_cast<int>(ceil(bounds.width() / config.cellSize)));
+    gridHeight = max<int>(1, static_cast<int>(ceil(bounds.height() / config.cellSize)));
     ensureBucketsSize();
     neighborBuffer.reserve(config.neighborReserve);
 }
