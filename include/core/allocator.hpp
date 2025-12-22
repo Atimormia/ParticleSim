@@ -1,114 +1,118 @@
 #pragma once
 #include <cstddef>
-#include <array>
-#include <stdexcept>
-#include <assert.h>
 #include <memory>
+#include <stdexcept>
+#include <cassert>
+#include <new>
+
 namespace core
 {
-    template <typename T>
-    struct AllocatorStorage
+    struct PoolStorage
     {
-        static_assert(std::is_trivially_destructible_v<T>);
-
-        static constexpr size_t INVALID_INDEX = static_cast<size_t>(-1);
-
-        struct MemoryBlock
+        struct Block
         {
-            T data{};
-            size_t next = INVALID_INDEX;
+            Block *next;
+#ifndef NDEBUG
             bool inUse = false;
+#endif
         };
 
-        explicit AllocatorStorage(size_t elementCount)
-            : elementCount(elementCount),
-              memoryBlocks(new MemoryBlock[elementCount])
+        PoolStorage(size_t blockSize, size_t capacity)
+            : blockSize(blockSize), capacity(capacity)
         {
-            if (elementCount == 0)
-                throw std::invalid_argument("AllocatorStorage requires positive element count");
+            if (capacity == 0)
+                throw std::invalid_argument("Capacity must be > 0");
 
-            for (size_t i = 0; i < elementCount - 1; ++i)
-                memoryBlocks[i].next = i + 1;
+            memory = ::operator new(blockSize * capacity);
+            freeList = nullptr;
 
-            memoryBlocks[elementCount - 1].next = INVALID_INDEX;
-            head = 0;
+            for (size_t i = 0; i < capacity; ++i)
+            {
+                auto *block = reinterpret_cast<Block *>(
+                    static_cast<char *>(memory) + i * blockSize);
+                block->next = freeList;
+#ifndef NDEBUG
+                block->inUse = false;
+#endif
+                freeList = block;
+            }
         }
 
-        ~AllocatorStorage()
+        ~PoolStorage()
         {
-            delete[] memoryBlocks;
+            ::operator delete(memory);
         }
 
-        AllocatorStorage(const AllocatorStorage &) = delete;
-        AllocatorStorage &operator=(const AllocatorStorage &) = delete;
+        void *allocate()
+        {
+            if (!freeList)
+                throw std::bad_alloc();
 
-        size_t elementCount;
-        MemoryBlock *memoryBlocks;
-        size_t head;
+            Block *block = freeList;
+            freeList = block->next;
+
+#ifndef NDEBUG
+            assert(!block->inUse && "Allocating already-used block");
+            block->inUse = true;
+#endif
+            return block;
+        }
+
+        void deallocate(void *ptr)
+        {
+            auto *block = static_cast<Block *>(ptr);
+
+#ifndef NDEBUG
+            assert(block->inUse && "Double free detected");
+            block->inUse = false;
+#endif
+            block->next = freeList;
+            freeList = block;
+        }
+
+        bool owns(void *ptr) const
+        {
+            auto begin = static_cast<char *>(memory);
+            auto end = begin + blockSize * capacity;
+            return ptr >= begin && ptr < end &&
+                   ((static_cast<char *>(ptr) - begin) % blockSize == 0);
+        }
+
+        void *memory;
+        size_t blockSize;
+        size_t capacity;
+        Block *freeList;
     };
 
     template <typename T>
     class PoolAllocator
     {
-        static_assert(std::is_trivially_destructible_v<T>);
-
     public:
         using value_type = T;
 
-        PoolAllocator() noexcept : PoolAllocator(1024) {}
+        PoolAllocator() : PoolAllocator(1024) {}
 
-        explicit PoolAllocator(size_t elementCount)
-            : storage_(std::make_shared<AllocatorStorage<T>>(elementCount)) {}
+        explicit PoolAllocator(size_t capacity)
+            : storage_(std::make_shared<PoolStorage>(sizeof(T), capacity)) {}
 
-        template <typename U, typename = std::enable_if_t<std::is_same_v<U, T>>>
+        template <typename U>
         PoolAllocator(const PoolAllocator<U> &other) noexcept
-        {
-            static_assert(std::is_convertible_v<U *, T *>,
-                          "Allocator copy constructor only allowed for compatible types");
-            storage_ = other.storage_;
-        }
+            : storage_(other.storage_) {}
 
         T *allocate(size_t n = 1)
         {
             if (n != 1)
                 throw std::bad_alloc();
 
-            if (storage_->head == AllocatorStorage<T>::INVALID_INDEX)
-                throw std::bad_alloc();
-
-            auto &block = storage_->memoryBlocks[storage_->head];
-            assert(!block.inUse);
-
-            block.inUse = true;
-            storage_->head = block.next;
-            return &block.data;
+            return static_cast<T *>(storage_->allocate());
         }
 
         void deallocate(T *ptr, size_t n = 1)
         {
             if (n != 1)
-                throw std::invalid_argument("PoolAllocator can only deallocate single objects");
-            if (ptr == nullptr)
-                throw std::invalid_argument("Cannot deallocate nullptr");
+                throw std::bad_alloc();
 
-            using Block = typename AllocatorStorage<T>::MemoryBlock;
-            Block *blockPtr = reinterpret_cast<Block *>(
-                reinterpret_cast<char *>(ptr) - offsetof(Block, data));
-            if (blockPtr < storage_->memoryBlocks || blockPtr >= storage_->memoryBlocks + storage_->elementCount)
-            {
-                throw std::invalid_argument("Pointer not from this allocator");
-            }
-
-            assert(blockPtr->inUse && "Double free detected");
-
-            blockPtr->next = storage_->head;
-            storage_->head = blockPtr - storage_->memoryBlocks;
-            blockPtr->inUse = false;
-        }
-
-        size_t capacity() const
-        {
-            return storage_->elementCount_;
+            storage_->deallocate(ptr);
         }
 
         template <typename U>
@@ -123,11 +127,15 @@ namespace core
             return !(*this == other);
         }
 
+        size_t capacity() const
+        {
+            return storage_->capacity;
+        }
+
     private:
         template <typename>
         friend class PoolAllocator;
 
-        std::shared_ptr<AllocatorStorage<T>> storage_;
+        std::shared_ptr<PoolStorage> storage_;
     };
-
 }
