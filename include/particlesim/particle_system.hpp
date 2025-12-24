@@ -107,17 +107,15 @@ namespace particlesim
         }
 
         size_t add(const Particle &p);
-
-        void update(float dt);
-
+        void update(float dt, bool compact = false);
         size_t size() const
         {
             return activeIndices_.size();
         }
 
         span<const core::Vector2D> positions();
-
-        std::vector<Particle> get() const;
+        // for testing purposes
+        std::vector<Particle> get();
 
     private:
         core::FreeListPool<Particle> pool_;

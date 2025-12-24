@@ -2,7 +2,7 @@
 
 namespace particlesim
 {
-    std::vector<Particle> ParticleSystemDataAllocated::get() const
+    std::vector<Particle> ParticleSystemDataAllocated::get()
     {
         std::vector<Particle> out;
         out.reserve(activeIndices_.size());

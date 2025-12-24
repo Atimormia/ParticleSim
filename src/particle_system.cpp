@@ -162,7 +162,7 @@ namespace particlesim
         return index;
     }
 
-    void ParticleSystemDataAllocated::update(float dt)
+    void ParticleSystemDataAllocated::update(float dt, bool /*compact*/)
     {
         for (size_t i = 0; i < activeIndices_.size();)
         {
@@ -176,7 +176,7 @@ namespace particlesim
                 activeIndices_.pop_back();
             }
             else
-            {
+            { 
                 ++i;
                 p.update(dt);
             }

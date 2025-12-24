@@ -35,6 +35,7 @@ static void BM_Update(benchmark::State &state)
     {
         ZoneScoped;
         ps.update(0.016f, true); // simulate 1 frame (~16ms)
+        benchmark::ClobberMemory();
     }
 }
 
@@ -49,6 +50,12 @@ BENCHMARK_TEMPLATE(BM_Update, ParticleSystemDataSoA)
     ->Arg(1000)
     ->Arg(10000)
     ->Arg(50000);
+
+BENCHMARK_TEMPLATE(BM_Update, ParticleSystemDataAllocated)
+    ->Name("BM_Update_Allocated")
+    ->Arg(1000)
+    ->Arg(10000)
+    ->Arg(50000);    
 
 std::vector<core::Vector2D> generateParticles(size_t N, const WorldBounds &bounds)
 {
