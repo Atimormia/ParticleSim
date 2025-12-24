@@ -19,8 +19,10 @@ namespace particlesim
         { layout.size() } -> std::same_as<size_t>;
         { layout.add(p) } -> std::same_as<size_t>;
         { layout.positions() } -> same_as<span<const core::Vector2D>>;
+        #ifdef ENABLE_TEST_METHODS
         // for testing purposes
         { layout.get() } -> std::same_as<std::vector<Particle>>;
+        #endif
     };
 
     template <ParticleDataContainer Layout>
@@ -45,8 +47,10 @@ namespace particlesim
 
         size_t size() const { return data.size(); }
 
+        #ifdef ENABLE_TEST_METHODS
         // for testing purposes
         std::vector<Particle> get() { return data.get(); }
+        #endif
 
     private:
         Layout data;
@@ -63,8 +67,10 @@ namespace particlesim
         size_t size() const;
 
         span<const core::Vector2D> positions();
+        #ifdef ENABLE_TEST_METHODS
         // for testing purposes
         std::vector<Particle> get() { return particles; }
+        #endif
 
     private:
         std::vector<Particle> particles;
@@ -80,8 +86,10 @@ namespace particlesim
         size_t size() const;
 
         span<const core::Vector2D> positions();
+        #ifdef ENABLE_TEST_METHODS
         // for testing purposes
         std::vector<Particle> get();
+        #endif
 
     private:
         ParticleSoA particles;
@@ -117,7 +125,9 @@ namespace particlesim
 
         span<const core::Vector2D> positions();
 
+        #ifdef ENABLE_TEST_METHODS
         std::vector<Particle> get() const;
+        #endif
 
     private:
         core::FreeListPool<Particle> pool_;

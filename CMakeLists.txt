@@ -85,7 +85,8 @@ if (ENABLE_TESTS)
         tests/core/test_vector2d.cpp
         tests/core/test_allocator.cpp
     )
-
+    
+    target_compile_definitions(particlesim_tests PRIVATE ENABLE_TEST_METHODS)
     target_link_libraries(particlesim_tests PRIVATE gtest_main particlesim)
 
     include(GoogleTest)
