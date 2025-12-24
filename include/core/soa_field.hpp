@@ -3,11 +3,13 @@
 #include <vector>
 #include <array>
 #include <cstddef>
-#include "soa_container.hpp"
 
 namespace core
 {
     using namespace std;
+
+    template <size_t K, size_t Components>
+    concept ComponentIndex = (K < Components);
 
     template <typename F>
     concept SoAField = requires(F f, size_t n) {

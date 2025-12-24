@@ -10,9 +10,6 @@ namespace core
 {
     using namespace std;
 
-    template <size_t K, size_t Components>
-    concept ComponentIndex = (K < Components);
-
     template <typename... Fs>
     concept AllSoAFields = (SoAField<Fs> && ...);
 

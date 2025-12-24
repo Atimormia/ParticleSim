@@ -1,6 +1,6 @@
 #include "particlesim/particle.hpp"
 #include "particlesim/particle_system.hpp"
-#include "test_helpers.cpp"
+#include "test_helpers.hpp"
 #include <gtest/gtest.h>
 #include <cmath>
 
