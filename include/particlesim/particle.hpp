@@ -35,4 +35,5 @@ namespace particlesim
         SoAFieldScalar<float, Lifetime>,     
         SoAFieldScalar<uint8_t, Alive>   
         >;
+
 }

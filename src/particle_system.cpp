@@ -2,171 +2,232 @@
 #include <sstream>
 #include <algorithm>
 
-using namespace particlesim;
-ParticleSystemDataAoS::ParticleSystemDataAoS(size_t capacity)
+namespace particlesim
 {
-    particles.reserve(capacity);
-}
+    using namespace core;
+    using namespace std;
 
-void ParticleSystemDataAoS::update(float dt, bool compact)
-{
-    auto it = remove_if(particles.begin(), particles.end(), [&](Particle &p)
+    ParticleSystemDataAoS::ParticleSystemDataAoS(size_t capacity)
     {
+        particles.reserve(capacity);
+    }
+
+    void ParticleSystemDataAoS::update(float dt, bool compact)
+    {
+        auto it = remove_if(particles.begin(), particles.end(), [&](Particle &p)
+                            {
         if (!p.alive) 
             return true;
         p.update(dt);
-        return !p.alive; 
-    });
-    if (compact)
-        particles.erase(it, particles.end());
-}
-
-size_t ParticleSystemDataAoS::add(const Particle &p)
-{
-    particles.push_back(p);
-    return particles.size() - 1;
-}
-
-size_t ParticleSystemDataAoS::size() const
-{
-    return particles.size();
-}
-
-span<const Vector2D> particlesim::ParticleSystemDataAoS::positions()
-{
-    return span<const Vector2D>();
-}
-
-ParticleSystemDataSoA::ParticleSystemDataSoA(size_t capacity)
-{
-    particles.reserve(capacity);
-}
-
-size_t ParticleSystemDataSoA::add(const Particle &p)
-{
-    auto& [pos, vel, acc, life, alive] = fields();
-
-    pos.push_back(p.position.x, p.position.y);
-    vel.push_back(p.velocity.x, p.velocity.y);
-    acc.push_back(p.acceleration.x, p.acceleration.y);
-    life.push_back(p.lifetime);
-    alive.push_back(p.alive ? 1 : 0);
-
-    return particles.size() - 1;
-}
-
-size_t ParticleSystemDataSoA::size() const
-{
-    return particles.size();
-}
-
-void ParticleSystemDataSoA::update(float dt, bool compact)
-{
-    auto& [pos, vel, acc, life, alive] = fields();
-
-    const size_t n = particles.size();
-    if (n == 0)
-        return;
-
-    // raw pointers to contiguous storage - helps optimizer/vectorizer.
-    float *pos_x = pos.x();
-    float *pos_y = pos.y();
-    float *vel_x = vel.x();
-    float *vel_y = vel.y();
-    float *acc_x = acc.x();
-    float *acc_y = acc.y();
-    float *life_p = life.data();
-    uint8_t *alive_p = reinterpret_cast<uint8_t *>(alive.data());
-
-    for (size_t i = 0; i < n; ++i)
-    {
-        if (alive_p[i] == 0)
-            continue;
-
-        float vx = vel_x[i] + acc_x[i] * dt;
-        float vy = vel_y[i] + acc_y[i] * dt;
-        vel_x[i] = vx;
-        vel_y[i] = vy;
-
-        pos_x[i] += vx * dt;
-        pos_y[i] += vy * dt;
-
-        float l = life_p[i] - dt;
-        life_p[i] = l;
-        if (l <= 0.0f)
-            alive_p[i] = 0;
+        return !p.alive; });
+        if (compact)
+            particles.erase(it, particles.end());
     }
 
-    if (compact)
-        compactDead();
-}
-
-span<const Vector2D> particlesim::ParticleSystemDataSoA::positions()
-{
-    return span<const Vector2D>();
-}
-
-vector<Particle> ParticleSystemDataSoA::get()
-{
-    vector<Particle> out;
-    out.reserve(size());
-
-    auto& [pos, vel, acc, life, alive] = fields();
-
-    for (size_t i = 0; i < size(); i++)
+    size_t ParticleSystemDataAoS::add(const Particle &p)
     {
-        Particle p;
-        p.position = {pos.storage[0][i], pos.storage[1][i]};
-        p.velocity = {vel.storage[0][i], vel.storage[1][i]};
-        p.acceleration = {acc.storage[0][i], acc.storage[1][i]};
-        p.lifetime = life[i];
-        p.alive = (alive[i] != 0);
-
-        out.push_back(p);
+        particles.push_back(p);
+        return particles.size() - 1;
     }
 
-    return out;
-}
-
-void ParticleSystemDataSoA::compactDead()
-{
-    auto& [pos, vel, acc, life, alive] = fields();
-
-    size_t n = particles.size();
-    size_t i = 0;
-
-    while (i < n)
+    size_t ParticleSystemDataAoS::size() const
     {
-        if (!alive[i])
+        return particles.size();
+    }
+
+    span<const Vector2D> particlesim::ParticleSystemDataAoS::positions()
+    {
+        return span<const Vector2D>();
+    }
+
+    ParticleSystemDataSoA::ParticleSystemDataSoA(size_t capacity)
+    {
+        particles.reserve(capacity);
+    }
+
+    size_t ParticleSystemDataSoA::add(const Particle &p)
+    {
+        auto &[pos, vel, acc, life, alive] = fields();
+
+        pos.push_back(p.position.x, p.position.y);
+        vel.push_back(p.velocity.x, p.velocity.y);
+        acc.push_back(p.acceleration.x, p.acceleration.y);
+        life.push_back(p.lifetime);
+        alive.push_back(p.alive ? 1 : 0);
+
+        return particles.size() - 1;
+    }
+
+    size_t ParticleSystemDataSoA::size() const
+    {
+        return particles.size();
+    }
+
+    void ParticleSystemDataSoA::update(float dt, bool compact)
+    {
+        auto &[pos, vel, acc, life, alive] = fields();
+
+        const size_t n = particles.size();
+        if (n == 0)
+            return;
+
+        // raw pointers to contiguous storage - helps optimizer/vectorizer.
+        float *pos_x = pos.x();
+        float *pos_y = pos.y();
+        float *vel_x = vel.x();
+        float *vel_y = vel.y();
+        float *acc_x = acc.x();
+        float *acc_y = acc.y();
+        float *life_p = life.data();
+        uint8_t *alive_p = reinterpret_cast<uint8_t *>(alive.data());
+
+        for (size_t i = 0; i < n; ++i)
         {
-            size_t last = n - 1;
+            if (alive_p[i] == 0)
+                continue;
 
-            if (i != last)
+            float vx = vel_x[i] + acc_x[i] * dt;
+            float vy = vel_y[i] + acc_y[i] * dt;
+            vel_x[i] = vx;
+            vel_y[i] = vy;
+
+            pos_x[i] += vx * dt;
+            pos_y[i] += vy * dt;
+
+            float l = life_p[i] - dt;
+            life_p[i] = l;
+            if (l <= 0.0f)
+                alive_p[i] = 0;
+        }
+
+        if (compact)
+            compactDead();
+    }
+
+    span<const Vector2D> ParticleSystemDataSoA::positions()
+    {
+        return span<const Vector2D>();
+    }
+
+    vector<Particle> ParticleSystemDataSoA::get()
+    {
+        vector<Particle> out;
+        out.reserve(size());
+
+        auto &[pos, vel, acc, life, alive] = fields();
+
+        for (size_t i = 0; i < size(); i++)
+        {
+            Particle p;
+            p.position = {pos.storage[0][i], pos.storage[1][i]};
+            p.velocity = {vel.storage[0][i], vel.storage[1][i]};
+            p.acceleration = {acc.storage[0][i], acc.storage[1][i]};
+            p.lifetime = life[i];
+            p.alive = (alive[i] != 0);
+
+            out.push_back(p);
+        }
+
+        return out;
+    }
+
+    void ParticleSystemDataSoA::compactDead()
+    {
+        auto &[pos, vel, acc, life, alive] = fields();
+
+        size_t n = particles.size();
+        size_t i = 0;
+
+        while (i < n)
+        {
+            if (!alive[i])
             {
+                size_t last = n - 1;
+
+                if (i != last)
+                {
+                    for (int8_t k = 0; k < 2; ++k)
+                    {
+                        pos.storage[k][i] = pos.storage[k][last];
+                        vel.storage[k][i] = vel.storage[k][last];
+                        acc.storage[k][i] = acc.storage[k][last];
+                    }
+                    life.storage[0][i] = life.storage[0][last];
+                    alive.storage[0][i] = alive.storage[0][last];
+                }
+
                 for (int8_t k = 0; k < 2; ++k)
                 {
-                    pos.storage[k][i] = pos.storage[k][last];
-                    vel.storage[k][i] = vel.storage[k][last];
-                    acc.storage[k][i] = acc.storage[k][last];
+                    pos.storage[k].pop_back();
+                    vel.storage[k].pop_back();
+                    acc.storage[k].pop_back();
                 }
-                life.storage[0][i] = life.storage[0][last];
-                alive.storage[0][i] = alive.storage[0][last];
-            }
+                life.storage[0].pop_back();
+                alive.storage[0].pop_back();
 
-            for (int8_t k = 0; k < 2; ++k)
+                --n;
+            }
+            else
             {
-                pos.storage[k].pop_back();
-                vel.storage[k].pop_back();
-                acc.storage[k].pop_back();
+                ++i;
             }
-            life.storage[0].pop_back();
-            alive.storage[0].pop_back();
-
-            --n;
-        }
-        else
-        {
-            ++i;
         }
     }
-}
+    size_t ParticleSystemDataAllocated::add(const Particle &p)
+    {
+        size_t index = pool_.allocate();
+        if (index == INVALID_INDEX)
+            return INVALID_INDEX;
+
+        pool_.get(index) = p;
+        activeIndices_.push_back(index);
+        return index;
+    }
+
+    void ParticleSystemDataAllocated::update(float dt)
+    {
+        for (size_t i = 0; i < activeIndices_.size();)
+        {
+            size_t index = activeIndices_[i];
+            Particle &p = pool_.get(index);
+
+            if (!p.alive)
+            {
+                pool_.deallocate(index);
+                activeIndices_[i] = activeIndices_.back();
+                activeIndices_.pop_back();
+            }
+            else
+            {
+                ++i;
+                p.update(dt);
+            }
+        }
+    }
+
+    span<const Vector2D> ParticleSystemDataAllocated::positions()
+    {
+        vector<Vector2D> out;
+        out.reserve(activeIndices_.size());
+
+        for (size_t index : activeIndices_)
+        {
+            out.push_back(pool_.get(index).position);
+        }
+
+        return out;
+    }
+
+    vector<Particle> ParticleSystemDataAllocated::get() const
+    {
+        vector<Particle> out;
+        out.reserve(activeIndices_.size());
+
+        for (size_t index : activeIndices_)
+        {
+            out.push_back(pool_.get(index));
+        }
+
+        return out;
+    }
+} // namespace particlesim

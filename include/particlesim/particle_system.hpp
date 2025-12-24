@@ -6,49 +6,52 @@
 
 #include "core/soa_container.hpp"
 #include "core/vector.hpp"
+#include "core/free_list.hpp"
 #include "particle.hpp"
 #include "spatial_partitioning.hpp"
+#include "allocator.hpp"
 
 namespace particlesim
 {
-    using namespace std;
-    using namespace core;
-    
     template <typename T>
-    concept ParticleDataContainer = requires(T layout, float dt, const Particle &p) {
-        { layout.update(dt) } -> same_as<void>;
-        { layout.size() } -> integral;
-        { layout.add(p) } -> integral;
-        { layout.positions() } -> same_as<span<const Vector2D>>;
+    concept ParticleDataContainer = requires(T layout, float dt, const Particle &p, bool compact) {
+        T{size_t{}};
+        { layout.update(dt, compact) } -> same_as<void>;
+        { layout.size() } -> std::same_as<size_t>;
+        { layout.add(p) } -> std::same_as<size_t>;
+        { layout.positions() } -> same_as<span<const core::Vector2D>>;
+        // for testing purposes
+        { layout.get() } -> std::same_as<std::vector<Particle>>;
     };
 
     template <ParticleDataContainer Layout>
     class ParticleSystem
     {
     public:
-        ParticleSystem(size_t capacity = 100000, unique_ptr<ISpatialPartition> p = nullptr) : data(capacity), partition(move(p)) {}
+        ParticleSystem(size_t capacity = 100000, std::unique_ptr<ISpatialPartition> p = nullptr) : data(capacity), partition(std::move(p)) {}
 
-        void setPartition(unique_ptr<ISpatialPartition> p) { partition = move(p); }
+        void setPartition(std::unique_ptr<ISpatialPartition> p) { partition = std::move(p); }
 
         size_t addParticle(const Particle &p) { return data.add(p); }
 
         void update(float dt, bool compact = false)
         {
             data.update(dt, compact);
-            if (partition) 
+            if (partition)
             {
                 partition->setPositions(data.positions());
-                partition->build();    
+                partition->build();
             }
         }
 
         size_t size() const { return data.size(); }
 
-        vector<Particle> get() { return data.get(); }
+        // for testing purposes
+        std::vector<Particle> get() { return data.get(); }
 
     private:
         Layout data;
-        unique_ptr<ISpatialPartition> partition = nullptr;
+        std::unique_ptr<ISpatialPartition> partition = nullptr;
     };
 
     class ParticleSystemDataAoS
@@ -60,11 +63,12 @@ namespace particlesim
         size_t add(const Particle &p);
         size_t size() const;
 
-        span<const Vector2D> positions();
-        vector<Particle> get() { return particles; }
+        span<const core::Vector2D> positions();
+        // for testing purposes
+        std::vector<Particle> get() { return particles; }
 
     private:
-        vector<Particle> particles;
+        std::vector<Particle> particles;
     };
 
     class ParticleSystemDataSoA
@@ -75,23 +79,49 @@ namespace particlesim
         void update(float dt, bool compact = false);
         size_t add(const Particle &p);
         size_t size() const;
-        
-        span<const Vector2D> positions();
-        vector<Particle> get();
+
+        span<const core::Vector2D> positions();
+        // for testing purposes
+        std::vector<Particle> get();
 
     private:
         ParticleSoA particles;
 
         void compactDead();
-        const auto fields() 
+        const auto fields()
         {
             return tie(
                 particles.field<Position>(),
                 particles.field<Velocity>(),
                 particles.field<Acceleration>(),
                 particles.field<Lifetime>(),
-                particles.field<Alive>()
-            );
+                particles.field<Alive>());
         }
+    };
+
+    class ParticleSystemDataAllocated
+    {
+    public:
+        explicit ParticleSystemDataAllocated(size_t capacity) : pool_(capacity)
+        {
+            activeIndices_.reserve(capacity);
+        }
+
+        size_t add(const Particle &p);
+
+        void update(float dt);
+
+        size_t size() const
+        {
+            return activeIndices_.size();
+        }
+
+        span<const core::Vector2D> positions();
+
+        std::vector<Particle> get() const;
+
+    private:
+        core::FreeListPool<Particle> pool_;
+        std::vector<size_t> activeIndices_;
     };
 }

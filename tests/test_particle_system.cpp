@@ -15,6 +15,20 @@ Particle make_test_particle(float vx = 1.0f, float vy = 0.0f, float ax = 0.0f, f
     return p;
 }
 
+Particle makeAliveParticle()
+{
+    Particle p;
+    p.alive = true;
+    return p;
+}
+
+Particle makeDeadParticle()
+{
+    Particle p;
+    p.alive = false;
+    return p;
+}
+
 TEST(ParticleSystemAoSTest, AddAndSize)
 {
     ParticleSystem<ParticleSystemDataAoS> ps;
@@ -106,4 +120,57 @@ TEST(ParticleSystemTest, MultiStepUpdate)
     }
 
     EXPECT_EQ(ps_aos.size(), ps_soa.size());
+}
+
+
+TEST(ParticleSystemAllocatedTest, StartsEmpty)
+{
+    ParticleSystemDataAllocated system(10);
+    EXPECT_EQ(system.size(), 0u);
+}
+
+TEST(ParticleSystemAllocatedTest, AddIncreasesSize)
+{
+    ParticleSystemDataAllocated system(10);
+
+    system.add(makeAliveParticle());
+    EXPECT_EQ(system.size(), 1u);
+
+    system.add(makeAliveParticle());
+    EXPECT_EQ(system.size(), 2u);
+}
+
+TEST(ParticleSystemAllocatedTest, CapacityLimit)
+{
+    ParticleSystemDataAllocated system(2);
+
+    EXPECT_NE(system.add(makeAliveParticle()), INVALID_INDEX);
+    EXPECT_NE(system.add(makeAliveParticle()), INVALID_INDEX);
+    EXPECT_EQ(system.add(makeAliveParticle()), INVALID_INDEX);
+}
+
+TEST(ParticleSystemAllocatedTest, DeadParticlesAreRemovedOnUpdate)
+{
+    ParticleSystemDataAllocated system(4);
+
+    system.add(makeAliveParticle());
+    system.add(makeDeadParticle());
+    system.add(makeAliveParticle());
+
+    EXPECT_EQ(system.size(), 3u);
+
+    system.update(0.016f);
+    EXPECT_EQ(system.size(), 2u);
+}
+
+TEST(ParticleSystemAllocatedTest, SlotReuseAfterDeath)
+{
+    ParticleSystemDataAllocated system(2);
+
+    size_t first = system.add(makeDeadParticle());
+    system.update(0.016f);
+
+    size_t second = system.add(makeAliveParticle());
+
+    EXPECT_EQ(first, second);
 }

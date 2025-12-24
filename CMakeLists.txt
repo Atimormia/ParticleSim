@@ -44,14 +44,14 @@ endif()
 # --------------------------
 # Tracy profiler
 # --------------------------
-if (ENABLE_TRACY)
-    FetchContent_Declare(
-        tracy
-        GIT_REPOSITORY https://github.com/wolfpld/tracy.git
-        GIT_TAG master
-    )
-    FetchContent_MakeAvailable(tracy)
-endif()
+#if (ENABLE_TRACY)
+#    FetchContent_Declare(
+#        tracy
+#        GIT_REPOSITORY https://github.com/wolfpld/tracy.git
+#        GIT_TAG master
+#    )
+#    FetchContent_MakeAvailable(tracy)
+#endif()
 
 # Library
 add_library(particlesim STATIC
@@ -82,7 +82,8 @@ if (ENABLE_TESTS)
         tests/test_spatial_partitioning.cpp
         tests/test_particle_system.cpp
         tests/test_particle.cpp
-        tests/test_vector2d.cpp
+        tests/core/test_vector2d.cpp
+        tests/core/test_allocator.cpp
     )
 
     target_link_libraries(particlesim_tests PRIVATE gtest_main particlesim)
