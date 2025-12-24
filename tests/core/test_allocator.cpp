@@ -52,7 +52,7 @@ TEST(FreeListPoolTest, DoubleFreeTriggersAssert)
     pool.deallocate(idx);
     EXPECT_DEATH(pool.deallocate(idx), "Double free");
 }
-#endif
+
 TEST(FreeListPoolTest, AccessingFreeNodeTriggersAssert)
 {
     FreeListPool<int> pool(1);
@@ -61,3 +61,4 @@ TEST(FreeListPoolTest, AccessingFreeNodeTriggersAssert)
 
     EXPECT_DEATH(pool.get(idx), "Accessing free node");
 }
+#endif

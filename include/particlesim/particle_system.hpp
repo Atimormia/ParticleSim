@@ -9,7 +9,6 @@
 #include "core/free_list.hpp"
 #include "particle.hpp"
 #include "spatial_partitioning.hpp"
-#include "allocator.hpp"
 
 namespace particlesim
 {
