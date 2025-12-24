@@ -1,33 +1,10 @@
 #include "particlesim/particle.hpp"
 #include "particlesim/particle_system.hpp"
+#include "test_helpers.cpp"
 #include <gtest/gtest.h>
 #include <cmath>
 
 using namespace particlesim;
-
-Particle make_test_particle(float vx = 1.0f, float vy = 0.0f, float ax = 0.0f, float ay = 0.0f, float lifetime = 1.0f)
-{
-    Particle p;
-    p.velocity = {vx, vy};
-    p.acceleration = {ax, ay};
-    p.lifetime = lifetime;
-    p.alive = true;
-    return p;
-}
-
-Particle makeAliveParticle()
-{
-    Particle p;
-    p.alive = true;
-    return p;
-}
-
-Particle makeDeadParticle()
-{
-    Particle p;
-    p.alive = false;
-    return p;
-}
 
 TEST(ParticleSystemAoSTest, AddAndSize)
 {

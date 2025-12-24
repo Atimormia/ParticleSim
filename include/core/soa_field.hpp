@@ -3,6 +3,7 @@
 #include <vector>
 #include <array>
 #include <cstddef>
+#include "soa_container.hpp"
 
 namespace core
 {

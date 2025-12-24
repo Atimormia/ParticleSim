@@ -84,6 +84,7 @@ if (ENABLE_TESTS)
         tests/test_particle.cpp
         tests/core/test_vector2d.cpp
         tests/core/test_allocator.cpp
+        tests/test_helpers.cpp
     )
     
     target_compile_definitions(particlesim_tests PRIVATE ENABLE_TEST_METHODS)
