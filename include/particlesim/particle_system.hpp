@@ -7,6 +7,7 @@
 #include "core/soa_container.hpp"
 #include "core/vector.hpp"
 #include "core/free_list.hpp"
+#include "core/memory_arena.hpp"
 #include "particle.hpp"
 #include "spatial_partitioning.hpp"
 
@@ -27,7 +28,8 @@ namespace particlesim
     class ParticleSystem
     {
     public:
-        ParticleSystem(size_t capacity = 100000, std::unique_ptr<ISpatialPartition> p = nullptr) : data(capacity), partition(std::move(p)) {}
+        ParticleSystem(size_t capacity = 100000, std::unique_ptr<ISpatialPartition> p = nullptr) 
+            : data(capacity), partition(std::move(p)), arena_(capacity * sizeof(Particle)) {}
 
         void setPartition(std::unique_ptr<ISpatialPartition> p) { partition = std::move(p); }
 
@@ -38,7 +40,8 @@ namespace particlesim
             data.update(dt, compact);
             if (partition)
             {
-                partition->setPositions(data.positions());
+                partition->clear();
+                partition->setData({data.positions(), arena_});
                 partition->build();
             }
         }
@@ -51,6 +54,7 @@ namespace particlesim
     private:
         Layout data;
         std::unique_ptr<ISpatialPartition> partition = nullptr;
+        core::FrameArena arena_;
     };
 
     class ParticleSystemDataAoS

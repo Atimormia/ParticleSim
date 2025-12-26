@@ -37,7 +37,17 @@ namespace particlesim
 
     span<const Vector2D> particlesim::ParticleSystemDataAoS::positions()
     {
-        return span<const Vector2D>();
+        vector<Vector2D> out;
+        auto size = particles.size();
+        out.reserve(size);
+
+        for (int i = 0; i< size; ++i)
+        {
+            
+            out.push_back(particles[i].position);
+        }
+
+        return out;
     }
 
     ParticleSystemDataSoA::ParticleSystemDataSoA(size_t capacity)
@@ -106,7 +116,17 @@ namespace particlesim
 
     span<const Vector2D> ParticleSystemDataSoA::positions()
     {
-        return span<const Vector2D>();
+        auto &[pos, vel, acc, life, alive] = fields();
+        vector<Vector2D> out;
+        auto size = particles.size();
+        out.reserve(size);
+
+        for (int i = 0; i< size; ++i)
+        {
+            out.push_back(Vector2D(*pos.x(),*pos.y()));
+        }
+
+        return out;
     }
 
     void ParticleSystemDataSoA::compactDead()

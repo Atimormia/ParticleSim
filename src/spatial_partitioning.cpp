@@ -30,21 +30,14 @@ void UniformGrid::ensureBucketsSize()
     buckets.resize(gridWidth * gridHeight);
 }
 
-void UniformGrid::setPositions(span<const Vector2D> pos)
-{
-    positions = pos;
-}
-
 void UniformGrid::build()
 {
-    for (auto &b : buckets)
-        b.clear();
-    if (positions.empty())
+    if (data.positions.empty())
         return;
 
-    for (uint32_t i = 0; i < positions.size(); ++i)
+    for (uint32_t i = 0; i < data.positions.size(); ++i)
     {
-        auto &p = positions[i];
+        auto &p = data.positions[i];
         uint32_t idx = toCellIndex(p.x, p.y);
         buckets[idx].push_back(i);
     }
@@ -69,12 +62,12 @@ void UniformGrid::worldToCell(float x, float y, int &outX, int &outY) const
     outY = static_cast<int>(floor(ny));
 }
 
-span<const uint32_t> UniformGrid::queryNeighborhood(uint32_t particleID) const
+span<const uint32_t> UniformGrid::queryNeighborhood(uint32_t particleID)
 {
-    assert(positions.data() != nullptr && "setPositions() must be called before queryNeighborhood()");
-    assert(particleID < positions.size());
+    assert(data.positions.data() != nullptr && "setData() must be called before queryNeighborhood()");
+    assert(particleID < data.positions.size());
 
-    const auto &pos = positions[particleID];
+    const auto &pos = data.positions[particleID];
     int cx, cy;
     worldToCell(pos.x, pos.y, cx, cy);
 
@@ -122,11 +115,116 @@ void UniformGrid::clear()
     neighborBuffer.clear();
 }
 
-span<const uint32_t> particlesim::NoPartition::queryNeighborhood(uint32_t particleID) const
+void particlesim::UniformGridAllocated::build()
+{
+    size_t particleCount = data.positions.size();
+    const size_t bucketCount = static_cast<size_t>(gridWidth) * gridHeight;
+
+    buckets = data.arena.allocateArray<BucketInfo>(bucketCount);
+
+    // initialize counts
+    for (size_t i = 0; i < bucketCount; ++i)
+    {
+        buckets[i].count = 0;
+        buckets[i].capacity = 0;
+        buckets[i].data = nullptr;
+    }
+
+    if (particleCount == 0)
+        return;
+
+    // count how many particles go into each bucket
+    std::vector<uint32_t> counts(bucketCount);
+    for (uint32_t i = 0; i < particleCount; ++i)
+    {
+        const auto &p = data.positions[i];
+        uint32_t idx = toCellIndex(p.x, p.y);
+        ++counts[idx];
+    }
+
+    // allocate exact-sized arrays for each bucket
+    for (size_t i = 0; i < bucketCount; ++i)
+    {
+        if (counts[i] > 0)
+        {
+            buckets[i].capacity = counts[i];
+            buckets[i].data = data.arena.allocateArray<uint32_t>(buckets[i].capacity);
+            buckets[i].count = 0;
+        }
+    }
+
+    // populate buckets
+    for (uint32_t i = 0; i < particleCount; ++i)
+    {
+        const auto &p = data.positions[i];
+        uint32_t idx = toCellIndex(p.x, p.y);
+
+        BucketInfo &bucket = buckets[idx];
+        bucket.data[bucket.count++] = i;
+    }
+}
+
+span<const uint32_t> particlesim::UniformGridAllocated::queryNeighborhood(uint32_t particleID)
+{
+    size_t size = data.positions.size();
+    assert(data.positions.data() != nullptr && "setData() must be called before queryNeighborhood()");
+    assert(particleID < size);
+
+    const auto &pos = data.positions[particleID];
+    int cx, cy;
+    worldToCell(pos.x, pos.y, cx, cy);
+
+    size_t maxNeighbors = 0;
+    for (int dy = -1; dy <= 1; ++dy)
+        for (int dx = -1; dx <= 1; ++dx)
+            maxNeighbors += size;
+
+    uint32_t *result = data.arena.allocateArray<uint32_t>(maxNeighbors);
+    uint32_t count = 0;
+
+    for (int dy = -1; dy <= 1; ++dy)
+    {
+        int ny = cy + dy;
+        if (ny < 0 || ny >= static_cast<int>(gridHeight))
+            continue;
+        for (int dx = -1; dx <= 1; ++dx)
+        {
+            int nx = cx + dx;
+            if (nx < 0 || nx >= static_cast<int>(gridWidth))
+                continue;
+
+            const BucketInfo &bucket = buckets[ny * gridWidth + nx];
+            memcpy(result + count, bucket.data,
+                   bucket.count * sizeof(uint32_t));
+            count += bucket.count;
+        }
+    }
+
+    if (config.excludeSelfFromQuery)
+    {
+        for (uint32_t i = 0; i < count; ++i)
+        {
+            if (result[i] == particleID)
+            {
+                result[i] = result[--count];
+                break;
+            }
+        }
+    }
+
+    return {result, count};
+}
+
+void particlesim::UniformGridAllocated::clear()
+{
+    data.arena.reset();
+}
+
+span<const uint32_t> particlesim::NoPartition::queryNeighborhood(uint32_t particleID)
 {
     neighborBuffer.clear();
 
-    const uint32_t count = static_cast<uint32_t>(positions.size());
+    const uint32_t count = static_cast<uint32_t>(data.positions.size());
     for (uint32_t i = 0; i < count; ++i)
     {
         if (config.excludeSelfFromQuery && i == particleID)
