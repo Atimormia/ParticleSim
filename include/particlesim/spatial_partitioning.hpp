@@ -59,11 +59,11 @@ namespace particlesim
         uint32_t toCellIndex(float x, float y) const;
         void worldToCell(float x, float y, int &outX, int &outY) const;
 
+        PartitioningConfig config;
     protected:
         PartitionData data = {};
         uint32_t gridWidth = 0;
         uint32_t gridHeight = 0;
-        PartitioningConfig config;
 
     private:
         WorldBounds bounds;
@@ -104,9 +104,10 @@ namespace particlesim
         span<const uint32_t> queryNeighborhood(uint32_t particleID) override;
 
         void clear() override { neighborBuffer.clear(); }
+        
+        PartitioningConfig config;
 
     private:
-        PartitioningConfig config;
         PartitionData data = {};
         mutable vector<uint32_t> neighborBuffer;
     };

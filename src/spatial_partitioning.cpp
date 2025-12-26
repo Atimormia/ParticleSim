@@ -120,6 +120,7 @@ void particlesim::UniformGridAllocated::build()
     size_t particleCount = data.positions.size();
     const size_t bucketCount = static_cast<size_t>(gridWidth) * gridHeight;
 
+    assert(bucketCount <= particleCount * 8 && "UniformGrid resolution too fine for particle count");
     buckets = data.arena.allocateArray<BucketInfo>(bucketCount);
 
     // initialize counts
@@ -134,7 +135,9 @@ void particlesim::UniformGridAllocated::build()
         return;
 
     // count how many particles go into each bucket
-    std::vector<uint32_t> counts(bucketCount);
+    uint32_t* counts = data.arena.allocateArray<uint32_t>(bucketCount);
+    std::fill_n(counts, bucketCount, 0u);
+
     for (uint32_t i = 0; i < particleCount; ++i)
     {
         const auto &p = data.positions[i];

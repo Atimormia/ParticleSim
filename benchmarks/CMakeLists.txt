@@ -1,5 +1,7 @@
 if (ENABLE_BENCHMARKS)
-    add_executable(particlesim_bench bench_update.cpp)
+    add_executable(particlesim_bench 
+        bench_layout.cpp
+        bench_partitioning.cpp)
     target_link_libraries(particlesim_bench PRIVATE particlesim benchmark::benchmark)
 
     #if (ENABLE_TRACY)
