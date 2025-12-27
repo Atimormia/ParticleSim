@@ -115,74 +115,35 @@ void UniformGrid::clear()
     neighborBuffer.clear();
 }
 
-void particlesim::UniformGridAllocated::build()
-{
-    size_t particleCount = data.positions.size();
-    const size_t bucketCount = static_cast<size_t>(gridWidth) * gridHeight;
-
-    assert(bucketCount <= particleCount * 8 && "UniformGrid resolution too fine for particle count");
-    buckets = data.arena.allocateArray<BucketInfo>(bucketCount);
-
-    // initialize counts
-    for (size_t i = 0; i < bucketCount; ++i)
-    {
-        buckets[i].count = 0;
-        buckets[i].capacity = 0;
-        buckets[i].data = nullptr;
-    }
-
-    if (particleCount == 0)
-        return;
-
-    // count how many particles go into each bucket
-    uint32_t* counts = data.arena.allocateArray<uint32_t>(bucketCount);
-    std::fill_n(counts, bucketCount, 0u);
-
-    for (uint32_t i = 0; i < particleCount; ++i)
-    {
-        const auto &p = data.positions[i];
-        uint32_t idx = toCellIndex(p.x, p.y);
-        ++counts[idx];
-    }
-
-    // allocate exact-sized arrays for each bucket
-    for (size_t i = 0; i < bucketCount; ++i)
-    {
-        if (counts[i] > 0)
-        {
-            buckets[i].capacity = counts[i];
-            buckets[i].data = data.arena.allocateArray<uint32_t>(buckets[i].capacity);
-            buckets[i].count = 0;
-        }
-    }
-
-    // populate buckets
-    for (uint32_t i = 0; i < particleCount; ++i)
-    {
-        const auto &p = data.positions[i];
-        uint32_t idx = toCellIndex(p.x, p.y);
-
-        BucketInfo &bucket = buckets[idx];
-        bucket.data[bucket.count++] = i;
-    }
-}
-
 span<const uint32_t> particlesim::UniformGridAllocated::queryNeighborhood(uint32_t particleID)
 {
-    size_t size = data.positions.size();
-    assert(data.positions.data() != nullptr && "setData() must be called before queryNeighborhood()");
-    assert(particleID < size);
+    assert(data.positions.data() != nullptr);
+    assert(particleID < data.positions.size());
+    assert(&data.arena && "FrameArena must be provided");
 
     const auto &pos = data.positions[particleID];
     int cx, cy;
     worldToCell(pos.x, pos.y, cx, cy);
 
-    size_t maxNeighbors = 0;
+    // Conservative upper bound: sum of 9 buckets
+    size_t maxCount = 0;
     for (int dy = -1; dy <= 1; ++dy)
-        for (int dx = -1; dx <= 1; ++dx)
-            maxNeighbors += size;
+    {
+        int ny = cy + dy;
+        if (ny < 0 || ny >= static_cast<int>(gridHeight))
+            continue;
 
-    uint32_t *result = data.arena.allocateArray<uint32_t>(maxNeighbors);
+        for (int dx = -1; dx <= 1; ++dx)
+        {
+            int nx = cx + dx;
+            if (nx < 0 || nx >= static_cast<int>(gridWidth))
+                continue;
+
+            maxCount += buckets[ny * gridWidth + nx].size();
+        }
+    }
+
+    uint32_t *out = data.arena.allocateArray<uint32_t>(maxCount);
     uint32_t count = 0;
 
     for (int dy = -1; dy <= 1; ++dy)
@@ -190,16 +151,17 @@ span<const uint32_t> particlesim::UniformGridAllocated::queryNeighborhood(uint32
         int ny = cy + dy;
         if (ny < 0 || ny >= static_cast<int>(gridHeight))
             continue;
+
         for (int dx = -1; dx <= 1; ++dx)
         {
             int nx = cx + dx;
             if (nx < 0 || nx >= static_cast<int>(gridWidth))
                 continue;
 
-            const BucketInfo &bucket = buckets[ny * gridWidth + nx];
-            memcpy(result + count, bucket.data,
-                   bucket.count * sizeof(uint32_t));
-            count += bucket.count;
+            const auto &bucket = buckets[ny * gridWidth + nx];
+            std::memcpy(out + count, bucket.data(),
+                        bucket.size() * sizeof(uint32_t));
+            count += static_cast<uint32_t>(bucket.size());
         }
     }
 
@@ -207,15 +169,15 @@ span<const uint32_t> particlesim::UniformGridAllocated::queryNeighborhood(uint32
     {
         for (uint32_t i = 0; i < count; ++i)
         {
-            if (result[i] == particleID)
+            if (out[i] == particleID)
             {
-                result[i] = result[--count];
+                out[i] = out[--count];
                 break;
             }
         }
     }
 
-    return {result, count};
+    return {out, count};
 }
 
 void particlesim::UniformGridAllocated::clear()

@@ -34,7 +34,7 @@ namespace particlesim
     };
     class ISpatialPartition
     {
-    public: 
+    public:
         virtual ~ISpatialPartition() = default;
         virtual void setData(const PartitionData &data) = 0;
         virtual void build() = 0;
@@ -60,15 +60,16 @@ namespace particlesim
         void worldToCell(float x, float y, int &outX, int &outY) const;
 
         PartitioningConfig config;
+
     protected:
         PartitionData data = {};
         uint32_t gridWidth = 0;
         uint32_t gridHeight = 0;
+        vector<vector<uint32_t>> buckets;
 
     private:
         WorldBounds bounds;
 
-        vector<vector<uint32_t>> buckets;
         mutable vector<uint32_t> neighborBuffer;
 
         void ensureBucketsSize();
@@ -78,18 +79,8 @@ namespace particlesim
     public:
         UniformGridAllocated(const PartitioningConfig &cfg) : UniformGrid(cfg) {};
 
-        void build() override;
         span<const uint32_t> queryNeighborhood(uint32_t particleID) override;
         void clear() override;
-
-    private:
-        struct BucketInfo
-        {
-            uint32_t *data;
-            uint32_t count;
-            uint32_t capacity;
-        };
-        BucketInfo *buckets = nullptr;
     };
 
     class NoPartition final : public ISpatialPartition
@@ -104,7 +95,7 @@ namespace particlesim
         span<const uint32_t> queryNeighborhood(uint32_t particleID) override;
 
         void clear() override { neighborBuffer.clear(); }
-        
+
         PartitioningConfig config;
 
     private:
