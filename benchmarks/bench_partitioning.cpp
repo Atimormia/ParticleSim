@@ -31,11 +31,11 @@ struct PartitioningBenchmarkData
 
     PartitioningBenchmarkData(size_t range, float cellSize)
         : particles(),
-          grid(makeConfig(cellSize)),
-          arena((range * sizeof(uint32_t) * 32) + (64 * 1024))
+          arena(range * sizeof(uint32_t) * 16),
+          grid(makeConfig(cellSize))
     {
         particles = generateParticles(range, grid.config.world);
-        grid.setData({particles, std::move(arena)});
+        grid.setData({particles, arena});
     }
 
     static PartitioningConfig makeConfig(float cellSize)
@@ -58,6 +58,7 @@ static void BM_UniformGridBuild(benchmark::State &state)
     {
         data.arena.reset();
         data.grid.build();
+        benchmark::ClobberMemory();
     }
 
     state.SetItemsProcessed(N * state.iterations());
@@ -72,16 +73,17 @@ static void BM_UniformGridQuery(benchmark::State &state)
 
     for (auto _ : state)
     {
+        grid.arena.reset();
         for (size_t i = 0; i < N; ++i)
         {
-            grid.arena.reset();
-            benchmark::DoNotOptimize(grid.grid.queryNeighborhood(static_cast<uint32_t>(i)));            
+            benchmark::DoNotOptimize(grid.grid.queryNeighborhood(static_cast<uint32_t>(i)));
         }
     }
 
     state.SetItemsProcessed(N * state.iterations());
 }
 
+BENCHMARK(BM_UniformGridBuild<UniformGridAllocated>)->Arg(1000)->Arg(10000)->Arg(50000)->Arg(100000);
 BENCHMARK(BM_UniformGridQuery<UniformGridAllocated>)->Arg(1000)->Arg(10000)->Arg(50000)->Arg(100000);
 BENCHMARK(BM_UniformGridBuild<UniformGrid>)->Arg(1000)->Arg(10000)->Arg(50000)->Arg(100000);
 BENCHMARK(BM_UniformGridQuery<UniformGrid>)->Arg(1000)->Arg(10000)->Arg(50000)->Arg(100000);

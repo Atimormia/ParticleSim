@@ -28,8 +28,8 @@ namespace particlesim
     class ParticleSystem
     {
     public:
-        ParticleSystem(size_t capacity = 100000, std::unique_ptr<ISpatialPartition> p = nullptr)
-            : data(capacity), partition(std::move(p)), arena_(estimateArenaSize(capacity)) {}
+        ParticleSystem(size_t capacity = 100000, std::unique_ptr<ISpatialPartition> p = nullptr) 
+            : data(capacity), partition(std::move(p)), arena_(capacity * sizeof(Particle)) {}
 
         void setPartition(std::unique_ptr<ISpatialPartition> p) { partition = std::move(p); }
 
@@ -41,7 +41,7 @@ namespace particlesim
             if (partition)
             {
                 partition->clear();
-                partition->setData({data.positions(), std::move(arena_)});
+                partition->setData({data.positions(), arena_});
                 partition->build();
             }
         }
@@ -55,11 +55,6 @@ namespace particlesim
         Layout data;
         std::unique_ptr<ISpatialPartition> partition = nullptr;
         core::FrameArena arena_;
-
-        size_t estimateArenaSize(size_t particleCount)
-        {
-            return (particleCount * 16) + (particleCount * sizeof(uint32_t) * 8) + (64 * 1024);
-        }
     };
 
     class ParticleSystemDataAoS
@@ -77,7 +72,6 @@ namespace particlesim
 
     private:
         std::vector<Particle> particles;
-        std::vector<Vector2D> positionsCache_;
     };
 
     class ParticleSystemDataSoA
@@ -95,7 +89,6 @@ namespace particlesim
 
     private:
         ParticleSoA particles;
-        std::vector<Vector2D> positionsCache_;
 
         void compactDead();
         const auto fields()
@@ -131,6 +124,5 @@ namespace particlesim
     private:
         core::FreeListPool<Particle> pool_;
         std::vector<size_t> activeIndices_;
-        std::vector<Vector2D> positionsCache_;
     };
 }

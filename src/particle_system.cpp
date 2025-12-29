@@ -37,15 +37,17 @@ namespace particlesim
 
     span<const Vector2D> particlesim::ParticleSystemDataAoS::positions()
     {
-        const size_t count = particles.size();
+        vector<Vector2D> out;
+        auto size = particles.size();
+        out.reserve(size);
 
-        if (positionsCache_.size() < count)
-            positionsCache_.resize(count);
+        for (int i = 0; i< size; ++i)
+        {
+            
+            out.push_back(particles[i].position);
+        }
 
-        for (size_t i = 0; i < count; ++i)
-            positionsCache_[i] = particles[i].position;
-
-        return {positionsCache_.data(), count};
+        return out;
     }
 
     ParticleSystemDataSoA::ParticleSystemDataSoA(size_t capacity)
@@ -115,15 +117,16 @@ namespace particlesim
     span<const Vector2D> ParticleSystemDataSoA::positions()
     {
         auto &[pos, vel, acc, life, alive] = fields();
-        const size_t count = pos.size();
+        vector<Vector2D> out;
+        auto size = particles.size();
+        out.reserve(size);
 
-        if (positionsCache_.size() < count)
-            positionsCache_.resize(count);
+        for (int i = 0; i< size; ++i)
+        {
+            out.push_back(Vector2D(*pos.x(),*pos.y()));
+        }
 
-        for (size_t i = 0; i < count; ++i)
-            positionsCache_[i] = Vector2D(pos.x()[i], pos.y()[i]);
-
-        return {positionsCache_.data(), count};
+        return out;
     }
 
     void ParticleSystemDataSoA::compactDead()
@@ -193,7 +196,7 @@ namespace particlesim
                 activeIndices_.pop_back();
             }
             else
-            {
+            { 
                 ++i;
                 p.update(dt);
             }
@@ -202,15 +205,14 @@ namespace particlesim
 
     span<const Vector2D> ParticleSystemDataAllocated::positions()
     {
-        const size_t count = activeIndices_.size();
+        vector<Vector2D> out;
+        out.reserve(activeIndices_.size());
 
-        if (positionsCache_.size() < count)
-            positionsCache_.resize(count);
+        for (size_t index : activeIndices_)
+        {
+            out.push_back(pool_.get(index).position);
+        }
 
-        for (size_t i = 0; i < count; ++i)
-            positionsCache_[i] = pool_.get(activeIndices_[i]).position;
-
-        return {positionsCache_.data(), count};
+        return out;
     }
-
 } // namespace particlesim
