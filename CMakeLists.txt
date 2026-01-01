@@ -58,6 +58,7 @@ add_library(particlesim STATIC
     src/particle.cpp
     src/particle_system.cpp
     src/spatial_partitioning.cpp
+    src/parallel_scheduler.cpp
 )
 
 target_include_directories(particlesim PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
@@ -84,6 +85,7 @@ if (ENABLE_TESTS)
         tests/test_particle.cpp
         tests/core/test_vector2d.cpp
         tests/core/test_allocator.cpp
+        tests/core/test_scheduler.cpp
         tests/test_helpers.cpp
     )
     
