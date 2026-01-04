@@ -213,4 +213,44 @@ namespace particlesim
         return {positionsCache_.data(), count};
     }
 
+    void ParticleSystemDataSoAParallelized::updateParallel(float dt, core::IScheduler &scheduler, bool compact)
+    {
+        auto &[pos, vel, acc, life, alive] = fields();
+        const size_t count = size();
+        if (count == 0)
+            return;
+
+        // raw pointers to contiguous storage - helps optimizer/vectorizer.
+        float *pos_x = pos.x();
+        float *pos_y = pos.y();
+        float *vel_x = vel.x();
+        float *vel_y = vel.y();
+        float *acc_x = acc.x();
+        float *acc_y = acc.y();
+        float *life_p = life.data();
+        uint8_t *alive_p = reinterpret_cast<uint8_t *>(alive.data());
+
+        scheduler.parallelFor(0, count, 256, [&](size_t i)
+        {
+            if (alive_p[i] == 0)
+                return;
+
+            float vx = vel_x[i] + acc_x[i] * dt;
+            float vy = vel_y[i] + acc_y[i] * dt;
+            vel_x[i] = vx;
+            vel_y[i] = vy;
+
+            pos_x[i] += vx * dt;
+            pos_y[i] += vy * dt;
+
+            float l = life_p[i] - dt;
+            life_p[i] = l;
+            if (l <= 0.0f)
+                alive_p[i] = 0; 
+        });
+
+        if (compact)
+            compactDead();
+    }
+
 } // namespace particlesim

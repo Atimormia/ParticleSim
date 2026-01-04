@@ -42,9 +42,10 @@ namespace particlesim
         return particles;
     }
 
-    Particle make_test_particle(float vx = 1.0f, float vy = 0.0f, float ax = 0.0f, float ay = 0.0f, float lifetime = 1.0f)
+    Particle makeParticle(float px = 0.0f, float py = 0.0f, float vx = 1.0f, float vy = 0.0f, float ax = 0.0f, float ay = 0.0f, float lifetime = 1.0f)
     {
         Particle p;
+        p.position = {px, py};
         p.velocity = {vx, vy};
         p.acceleration = {ax, ay};
         p.lifetime = lifetime;

@@ -8,6 +8,7 @@
 #include "core/vector.hpp"
 #include "core/free_list.hpp"
 #include "core/memory_arena.hpp"
+#include "core/parallel_scheduler.hpp"
 #include "particle.hpp"
 #include "spatial_partitioning.hpp"
 
@@ -24,12 +25,17 @@ namespace particlesim
         { layout.get() } -> std::same_as<std::vector<Particle>>;
     };
 
+    template <typename T>
+    concept ParticleDataContainerParallel = ParticleDataContainer<T> && requires(T layout, float dt, IScheduler& scheduler, bool compact) {
+        { layout.updateParallel(dt, scheduler, compact) } -> std::same_as<void>;
+    };
+
     template <ParticleDataContainer Layout>
     class ParticleSystem
     {
     public:
         ParticleSystem(size_t capacity = 100000, std::unique_ptr<ISpatialPartition> p = nullptr)
-            : data(capacity), partition(std::move(p)), arena_(estimateArenaSize(capacity)) {}
+            : data(capacity), partition(std::move(p)), arena_(estimateArenaSize(capacity)), scheduler_() {}
 
         void setPartition(std::unique_ptr<ISpatialPartition> p) { partition = std::move(p); }
 
@@ -37,11 +43,14 @@ namespace particlesim
 
         void update(float dt, bool compact = false)
         {
-            data.update(dt, compact);
+            if constexpr (ParticleDataContainerParallel<Layout>)
+                data.updateParallel(dt, scheduler_, compact);
+            else
+                data.update(dt, compact);
             if (partition)
             {
                 partition->clear();
-                partition->setData({data.positions(), std::move(arena_)});
+                partition->setData({data.positions(), arena_});
                 partition->build();
             }
         }
@@ -55,6 +64,7 @@ namespace particlesim
         Layout data;
         std::unique_ptr<ISpatialPartition> partition = nullptr;
         core::FrameArena arena_;
+        core::ThreadPoolScheduler scheduler_;
 
         size_t estimateArenaSize(size_t particleCount)
         {
@@ -97,7 +107,8 @@ namespace particlesim
         ParticleSoA particles;
         std::vector<Vector2D> positionsCache_;
 
-        void compactDead();
+    protected:
+    void compactDead();
         const auto fields()
         {
             return tie(
@@ -107,6 +118,12 @@ namespace particlesim
                 particles.field<Lifetime>(),
                 particles.field<Alive>());
         }
+    };
+
+    class ParticleSystemDataSoAParallelized : public ParticleSystemDataSoA
+    {
+    public:
+        void updateParallel(float dt, core::IScheduler &scheduler, bool compact = false);
     };
 
     class ParticleSystemDataAllocated
