@@ -27,15 +27,21 @@ struct PartitioningBenchmarkData
 {
     std::vector<Vector2D> particles;
     core::FrameArena arena;
+    core::ThreadPoolScheduler scheduler;
     T grid;
 
     PartitioningBenchmarkData(size_t range, float cellSize)
         : particles(),
           grid(makeConfig(cellSize)),
-          arena((range * sizeof(uint32_t) * 32) + (64 * 1024))
+          arena((range * sizeof(uint32_t) * 32) + (64 * 1024)),
+          scheduler()
     {
         particles = generateParticles(range, grid.config.world);
-        grid.setData({particles, std::move(arena)});
+        PartitionData data;
+        data.positions = particles;
+        data.arena = arena;
+        data.scheduler = &scheduler;
+        grid.setData(data);
     }
 
     static PartitioningConfig makeConfig(float cellSize)
@@ -56,7 +62,7 @@ static void BM_UniformGridBuild(benchmark::State &state)
 
     for (auto _ : state)
     {
-        //data.arena.reset();
+        data.arena.reset();
         data.grid.build();
     }
 
@@ -83,6 +89,7 @@ static void BM_UniformGridQuery(benchmark::State &state)
 }
 
 //BENCHMARK(BM_UniformGridQuery<UniformGridAllocated>)->Arg(1000)->Arg(10000)->Arg(50000)->Arg(100000);
+BENCHMARK(BM_UniformGridBuild<UniformGridParallel>)->Arg(1000)->Arg(10000)->Arg(50000)->Arg(100000);
 BENCHMARK(BM_UniformGridBuild<UniformGrid>)->Arg(1000)->Arg(10000)->Arg(50000)->Arg(100000);
 BENCHMARK(BM_UniformGridQuery<UniformGrid>)->Arg(1000)->Arg(10000)->Arg(50000)->Arg(100000);
 BENCHMARK(BM_UniformGridQuery<UniformGrid, 0.5f>)->Arg(1000)->Arg(10000)->Arg(50000)->Arg(100000);

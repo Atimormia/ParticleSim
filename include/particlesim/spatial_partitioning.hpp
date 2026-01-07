@@ -5,6 +5,7 @@
 #include <cstdio>
 #include "core/vector.hpp"
 #include "core/memory_arena.hpp"
+#include "core/parallel_scheduler.hpp"
 namespace particlesim
 {
     using namespace core;
@@ -31,12 +32,19 @@ namespace particlesim
     {
         span<const Vector2D> positions = {};
         FrameArena arena = {};
+        IScheduler* scheduler = nullptr;
+        
+        PartitionData() = default;
+        PartitionData(const PartitionData&) = delete;
+        PartitionData& operator=(const PartitionData&) = delete;
+        PartitionData(PartitionData&&) = default;
+        PartitionData& operator=(PartitionData&&) = default;
     };
     class ISpatialPartition
     {
     public: 
         virtual ~ISpatialPartition() = default;
-        virtual void setData(const PartitionData &data) = 0;
+        virtual void setData(PartitionData &partitioningData) = 0;
         virtual void build() = 0;
         virtual span<const uint32_t> queryNeighborhood(uint32_t particleID) = 0;
         virtual void clear() = 0;
@@ -51,7 +59,7 @@ namespace particlesim
         void resizeGrid(float cellSize, const WorldBounds &world);
 
         // ISpatialPartition interface
-        void setData(const PartitionData &data) override { this->data = data; }
+        void setData(PartitionData &partitioningData) override { data = &partitioningData; }
         virtual void build() override;
         virtual span<const uint32_t> queryNeighborhood(uint32_t particleID) override;
         virtual void clear() override;
@@ -61,9 +69,10 @@ namespace particlesim
 
         PartitioningConfig config;
     protected:
-        PartitionData data = {};
+        PartitionData* data = {};
         uint32_t gridWidth = 0;
         uint32_t gridHeight = 0;
+        void ensureBucketsSize();
 
     private:
         WorldBounds bounds;
@@ -71,7 +80,6 @@ namespace particlesim
         vector<vector<uint32_t>> buckets;
         mutable vector<uint32_t> neighborBuffer;
 
-        void ensureBucketsSize();
     };
     class UniformGridAllocated : public UniformGrid
     {
@@ -82,14 +90,30 @@ namespace particlesim
         span<const uint32_t> queryNeighborhood(uint32_t particleID) override;
         void clear() override;
 
-    private:
+    protected:
         struct BucketInfo
         {
             uint32_t *data;
             uint32_t count;
             uint32_t capacity;
+            void clear()
+            {
+                data = nullptr;
+                count = 0;
+                capacity = 0;
+            }
         };
+    private:
         BucketInfo *buckets = nullptr;
+    };
+
+    class UniformGridParallel: public UniformGridAllocated
+    {
+    public:
+        UniformGridParallel(const PartitioningConfig &cfg) : UniformGridAllocated(cfg) {};
+        void build() override;
+    private:
+        vector<BucketInfo> bucketsParallel;
     };
 
     class NoPartition final : public ISpatialPartition
@@ -97,7 +121,7 @@ namespace particlesim
     public:
         explicit NoPartition(const PartitioningConfig &cfg) : config(cfg) { neighborBuffer.reserve(cfg.neighborReserve); }
 
-        void setData(const PartitionData &data) override { this->data = data; }
+        void setData(PartitionData &partitioningData) override { data = &partitioningData; }
 
         void build() override {}
 
@@ -108,7 +132,7 @@ namespace particlesim
         PartitioningConfig config;
 
     private:
-        PartitionData data = {};
+        PartitionData* data = {};
         mutable vector<uint32_t> neighborBuffer;
     };
 

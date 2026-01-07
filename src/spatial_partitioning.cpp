@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <cstdint>
 #include <cmath>
+#include <thread>
 
 using namespace particlesim;
 
@@ -32,12 +33,12 @@ void UniformGrid::ensureBucketsSize()
 
 void UniformGrid::build()
 {
-    if (data.positions.empty())
+    if (data->positions.empty())
         return;
 
-    for (uint32_t i = 0; i < data.positions.size(); ++i)
+    for (uint32_t i = 0; i < data->positions.size(); ++i)
     {
-        auto &p = data.positions[i];
+        auto &p = data->positions[i];
         uint32_t idx = toCellIndex(p.x, p.y);
         buckets[idx].push_back(i);
     }
@@ -64,10 +65,10 @@ void UniformGrid::worldToCell(float x, float y, int &outX, int &outY) const
 
 span<const uint32_t> UniformGrid::queryNeighborhood(uint32_t particleID)
 {
-    assert(data.positions.data() != nullptr && "setData() must be called before queryNeighborhood()");
-    assert(particleID < data.positions.size());
+    assert(data->positions.data() != nullptr && "setData() must be called before queryNeighborhood()");
+    assert(particleID < data->positions.size());
 
-    const auto &pos = data.positions[particleID];
+    const auto &pos = data->positions[particleID];
     int cx, cy;
     worldToCell(pos.x, pos.y, cx, cy);
 
@@ -117,11 +118,11 @@ void UniformGrid::clear()
 
 void particlesim::UniformGridAllocated::build()
 {
-    size_t particleCount = data.positions.size();
+    size_t particleCount = data->positions.size();
     const size_t bucketCount = static_cast<size_t>(gridWidth) * gridHeight;
 
     assert(bucketCount <= particleCount * 8 && "UniformGrid resolution too fine for particle count");
-    buckets = data.arena.allocateArray<BucketInfo>(bucketCount);
+    buckets = data->arena.allocateArray<BucketInfo>(bucketCount);
 
     // initialize counts
     for (size_t i = 0; i < bucketCount; ++i)
@@ -135,12 +136,12 @@ void particlesim::UniformGridAllocated::build()
         return;
 
     // count how many particles go into each bucket
-    uint32_t* counts = data.arena.allocateArray<uint32_t>(bucketCount);
+    uint32_t* counts = data->arena.allocateArray<uint32_t>(bucketCount);
     std::fill_n(counts, bucketCount, 0u);
 
     for (uint32_t i = 0; i < particleCount; ++i)
     {
-        const auto &p = data.positions[i];
+        const auto &p = data->positions[i];
         uint32_t idx = toCellIndex(p.x, p.y);
         ++counts[idx];
     }
@@ -151,7 +152,7 @@ void particlesim::UniformGridAllocated::build()
         if (counts[i] > 0)
         {
             buckets[i].capacity = counts[i];
-            buckets[i].data = data.arena.allocateArray<uint32_t>(buckets[i].capacity);
+            buckets[i].data = data->arena.allocateArray<uint32_t>(buckets[i].capacity);
             buckets[i].count = 0;
         }
     }
@@ -159,7 +160,7 @@ void particlesim::UniformGridAllocated::build()
     // populate buckets
     for (uint32_t i = 0; i < particleCount; ++i)
     {
-        const auto &p = data.positions[i];
+        const auto &p = data->positions[i];
         uint32_t idx = toCellIndex(p.x, p.y);
 
         BucketInfo &bucket = buckets[idx];
@@ -169,11 +170,11 @@ void particlesim::UniformGridAllocated::build()
 
 span<const uint32_t> particlesim::UniformGridAllocated::queryNeighborhood(uint32_t particleID)
 {
-    size_t size = data.positions.size();
-    assert(data.positions.data() != nullptr && "setData() must be called before queryNeighborhood()");
+    size_t size = data->positions.size();
+    assert(data->positions.data() != nullptr && "setData() must be called before queryNeighborhood()");
     assert(particleID < size);
 
-    const auto &pos = data.positions[particleID];
+    const auto &pos = data->positions[particleID];
     int cx, cy;
     worldToCell(pos.x, pos.y, cx, cy);
 
@@ -182,7 +183,7 @@ span<const uint32_t> particlesim::UniformGridAllocated::queryNeighborhood(uint32
         for (int dx = -1; dx <= 1; ++dx)
             maxNeighbors += size;
 
-    uint32_t *result = data.arena.allocateArray<uint32_t>(maxNeighbors);
+    uint32_t *result = data->arena.allocateArray<uint32_t>(maxNeighbors);
     uint32_t count = 0;
 
     for (int dy = -1; dy <= 1; ++dy)
@@ -220,14 +221,14 @@ span<const uint32_t> particlesim::UniformGridAllocated::queryNeighborhood(uint32
 
 void particlesim::UniformGridAllocated::clear()
 {
-    data.arena.reset();
+    data->arena.reset();
 }
 
 span<const uint32_t> particlesim::NoPartition::queryNeighborhood(uint32_t particleID)
 {
     neighborBuffer.clear();
 
-    const uint32_t count = static_cast<uint32_t>(data.positions.size());
+    const uint32_t count = static_cast<uint32_t>(data->positions.size());
     for (uint32_t i = 0; i < count; ++i)
     {
         if (config.excludeSelfFromQuery && i == particleID)
@@ -237,4 +238,107 @@ span<const uint32_t> particlesim::NoPartition::queryNeighborhood(uint32_t partic
     }
 
     return neighborBuffer;
+}
+
+void particlesim::UniformGridParallel::build()
+{
+    const auto& positions = data->positions;
+    const size_t particleCount = positions.size();
+
+    if (particleCount == 0)
+        return;
+
+    resizeGrid(config.cellSize, config.world);
+    ensureBucketsSize();
+
+    for (auto& b : bucketsParallel)
+        b.clear();
+
+    if (!data->scheduler)
+        return;
+
+    auto& scheduler = *data->scheduler;
+    FrameArena& arena = data->arena;
+
+    const uint32_t cellCount = gridWidth * gridHeight;
+
+    // Conservative thread count guess
+    const uint32_t threadCount = std::max(1u, static_cast<uint32_t>(std::thread::hardware_concurrency()));
+
+    BucketInfo* threadBuckets = arena.allocateArray<BucketInfo>(threadCount * cellCount);
+    for (uint32_t t = 0; t < threadCount; ++t)
+    {
+        for (uint32_t c = 0; c < cellCount; ++c)
+        {
+            BucketInfo& b = threadBuckets[t * cellCount + c];
+            b.count = 0;
+            b.capacity = 8; // small initial capacity, grows implicitly by over-allocation
+            b.data = arena.allocateArray<uint32_t>(b.capacity);
+        }
+    }
+
+    // Thread-local index assignment
+    static thread_local uint32_t tlsThreadIndex = UINT32_MAX;
+    static std::atomic<uint32_t> nextThreadIndex{0};
+
+    auto getThreadIndex = [&]()
+    {
+        if (tlsThreadIndex == UINT32_MAX)
+            tlsThreadIndex = nextThreadIndex.fetch_add(1);
+        return tlsThreadIndex;
+    };
+
+    // --- PARALLEL FILL ---
+    scheduler.parallelFor(0, particleCount, 256,
+        [&](size_t i)
+        {
+            uint32_t tid = getThreadIndex();
+            if (tid >= threadCount)
+                return; // safety
+
+            const Vector2D& p = positions[i];
+            uint32_t cell = toCellIndex(p.x, p.y);
+
+            BucketInfo& bucket = threadBuckets[tid * cellCount + cell];
+
+            // Grow if needed
+            if (bucket.count == bucket.capacity)
+            {
+                uint32_t newCap = bucket.capacity * 2;
+                uint32_t* newData = arena.allocateArray<uint32_t>(newCap);
+                memcpy(newData, bucket.data, bucket.count * sizeof(uint32_t));
+                bucket.data = newData;
+                bucket.capacity = newCap;
+            }
+
+            bucket.data[bucket.count++] = static_cast<uint32_t>(i);
+        });
+
+    scheduler.wait();
+
+    // --- MERGE ---
+    for (uint32_t c = 0; c < cellCount; ++c)
+    {
+        BucketInfo& dst = bucketsParallel[c];
+        for (uint32_t t = 0; t < threadCount; ++t)
+        {
+            BucketInfo& src = threadBuckets[t * cellCount + c];
+            if (src.count == 0)
+                continue;
+
+            size_t newCount = dst.count + src.count;
+            if (newCount > dst.capacity)
+            {
+                uint32_t newCap = static_cast<uint32_t>(newCount * 2);
+                uint32_t* newData = arena.allocateArray<uint32_t>(newCap);
+                memcpy(newData, dst.data, dst.count * sizeof(uint32_t));
+                dst.data = newData;
+                dst.capacity = newCap;
+            }
+
+            memcpy(dst.data + dst.count, src.data, src.count * sizeof(uint32_t));
+            dst.count = newCount;
+        }
+    }
+
 }

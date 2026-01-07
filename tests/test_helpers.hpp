@@ -1,5 +1,6 @@
 #pragma once
 #include "particlesim/particle.hpp"
+#include "particlesim/particle_system.hpp"
 #include <gtest/gtest.h>
 
 namespace particlesim
@@ -15,5 +16,6 @@ namespace particlesim
         EXPECT_NEAR(a.x, b.x, eps);
         EXPECT_NEAR(a.y, b.y, eps);
     }
+
 
 } // namespace particlesim

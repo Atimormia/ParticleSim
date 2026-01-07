@@ -54,6 +54,15 @@ BENCHMARK_TEMPLATE(BM_Update, ParticleSystemDataAllocated)
     ->Name("BM_Update_Allocated")
     ->Arg(1000)
     ->Arg(10000)
-    ->Arg(50000);
+    ->Arg(50000)
+    ->Arg(100000);
+
+BENCHMARK_TEMPLATE(BM_Update, ParticleSystemDataSoAParallelized)
+    ->Name("BM_Update_Parallel")
+    ->Arg(1000)
+    ->Arg(10000)
+    ->Arg(50000)
+    ->Arg(100000);
+
 
 BENCHMARK_MAIN();

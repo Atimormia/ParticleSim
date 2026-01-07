@@ -31,6 +31,11 @@ namespace core
                          const std::function<void(size_t)> &fn) override;
         void wait() override;
 
+        ThreadPoolScheduler(const ThreadPoolScheduler&) = delete;
+        ThreadPoolScheduler& operator=(const ThreadPoolScheduler&) = delete;
+        ThreadPoolScheduler(ThreadPoolScheduler&&) = default;
+        ThreadPoolScheduler& operator=(ThreadPoolScheduler&&) = default;
+
     private:
         void workerLoop();
 

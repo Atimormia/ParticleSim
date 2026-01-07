@@ -43,14 +43,20 @@ namespace particlesim
 
         void update(float dt, bool compact = false)
         {
+            PartitionData partitionData;
+            partitionData.positions = data.positions();
+            partitionData.arena = arena_;
             if constexpr (ParticleDataContainerParallel<Layout>)
+            {
+                partitionData.scheduler = &scheduler_;
                 data.updateParallel(dt, scheduler_, compact);
+            }
             else
                 data.update(dt, compact);
             if (partition)
             {
                 partition->clear();
-                partition->setData({data.positions(), arena_});
+                partition->setData(partitionData);
                 partition->build();
             }
         }

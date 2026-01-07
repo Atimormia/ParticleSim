@@ -25,7 +25,9 @@ TEST(UniformGrid, SetPositionsStoresSpan)
     UniformGrid grid(cfg);
 
     vector<Vector2D> pos = {{1, 2}, {3, 4}};
-    grid.setData({pos, {}});
+    PartitionData data = {};
+    data.positions = pos;
+    grid.setData(data);
 
     grid.build(); // should not crash
 }
@@ -46,7 +48,9 @@ TEST(UniformGrid, BuildBinsParticlesIntoCorrectCells)
         {95, 95} // bottom-right cell
     };
 
-    grid.setData({pos, {}});
+    PartitionData data = {};
+    data.positions = pos;
+    grid.setData(data);
     grid.build();
 
     // Check that each particle is in the correct bucket
@@ -83,7 +87,9 @@ TEST(UniformGrid, QueryNeighborhoodReturnsNeighborsIn8ConnectedRegion)
     vector<Vector2D> pos = {
         {5, 5}, {15, 5}, {25, 5}, {5, 15}, {15, 15}, {25, 15}, {5, 25}, {15, 25}, {25, 25}};
 
-    grid.setData({pos, {}});
+    PartitionData data = {};
+    data.positions = pos;
+    grid.setData(data);
     grid.build();
 
     auto neigh = grid.queryNeighborhood(4);
@@ -103,7 +109,9 @@ TEST(UniformGrid, ExcludeSelfRemovesSelfFromResult)
 
     UniformGrid grid(cfg);
     vector<Vector2D> pos = {{1, 1}, {1.1f, 1.1f}};
-    grid.setData({pos, {}});
+    PartitionData data = {};
+    data.positions = pos;
+    grid.setData(data);
     grid.build();
 
     auto neigh = grid.queryNeighborhood(0);
@@ -119,7 +127,7 @@ TEST(UniformGrid, QueryNeighborhoodEdgesDoNotGoOutOfBounds)
 {
     PartitioningConfig cfg;
     cfg.cellSize = 10.f;
-    cfg.world = {0, 0, 30, 30}; 
+    cfg.world = {0, 0, 30, 30};
     cfg.excludeSelfFromQuery = false;
 
     UniformGrid grid(cfg);
@@ -130,7 +138,9 @@ TEST(UniformGrid, QueryNeighborhoodEdgesDoNotGoOutOfBounds)
         {1, 11}  // center-left
     };
 
-    grid.setData({pos, {}});
+    PartitionData data = {};
+    data.positions = pos;
+    grid.setData(data);
     grid.build();
 
     auto neighSpan = grid.queryNeighborhood(0);
@@ -167,7 +177,9 @@ TEST(UniformGrid, ClearEmptiesBucketsAndBuffer)
     UniformGrid grid(cfg);
 
     const vector<Vector2D> pos = {{1, 1}, {2, 2}};
-    grid.setData({pos, {}});
+    PartitionData data = {};
+    data.positions = pos;
+    grid.setData(data);
     grid.build();
 
     auto neigh = grid.queryNeighborhood(0);
@@ -193,7 +205,9 @@ TEST(UniformGrid, ParticlesOutsideBoundsAreClamped)
         {150, 150}  // should clamp to last cell
     };
 
-    grid.setData({pos, {}});
+    PartitionData data = {};
+    data.positions = pos;
+    grid.setData(data);
     grid.build();
 
     auto idx0 = grid.toCellIndex(pos[0].x, pos[0].y);
