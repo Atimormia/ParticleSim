@@ -45,7 +45,7 @@ namespace particlesim
         {
             PartitionData partitionData;
             partitionData.positions = data.positions();
-            partitionData.arena = arena_;
+            partitionData.arena = &arena_;
             if constexpr (ParticleDataContainerParallel<Layout>)
             {
                 partitionData.scheduler = &scheduler_;

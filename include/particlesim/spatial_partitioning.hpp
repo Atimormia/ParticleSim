@@ -31,20 +31,14 @@ namespace particlesim
     struct PartitionData
     {
         span<const Vector2D> positions = {};
-        FrameArena arena = {};
+        FrameArena* arena = nullptr;
         IScheduler* scheduler = nullptr;
-        
-        PartitionData() = default;
-        PartitionData(const PartitionData&) = delete;
-        PartitionData& operator=(const PartitionData&) = delete;
-        PartitionData(PartitionData&&) = default;
-        PartitionData& operator=(PartitionData&&) = default;
     };
     class ISpatialPartition
     {
     public: 
         virtual ~ISpatialPartition() = default;
-        virtual void setData(PartitionData &partitioningData) = 0;
+        virtual void setData(const PartitionData& partitioningData) = 0;
         virtual void build() = 0;
         virtual span<const uint32_t> queryNeighborhood(uint32_t particleID) = 0;
         virtual void clear() = 0;
@@ -59,7 +53,7 @@ namespace particlesim
         void resizeGrid(float cellSize, const WorldBounds &world);
 
         // ISpatialPartition interface
-        void setData(PartitionData &partitioningData) override { data = &partitioningData; }
+        void setData(const PartitionData& partitioningData) override { data = std::move(partitioningData); }
         virtual void build() override;
         virtual span<const uint32_t> queryNeighborhood(uint32_t particleID) override;
         virtual void clear() override;
@@ -69,7 +63,7 @@ namespace particlesim
 
         PartitioningConfig config;
     protected:
-        PartitionData* data = {};
+        PartitionData data = {};
         uint32_t gridWidth = 0;
         uint32_t gridHeight = 0;
         void ensureBucketsSize();
@@ -121,7 +115,7 @@ namespace particlesim
     public:
         explicit NoPartition(const PartitioningConfig &cfg) : config(cfg) { neighborBuffer.reserve(cfg.neighborReserve); }
 
-        void setData(PartitionData &partitioningData) override { data = &partitioningData; }
+        void setData(const PartitionData& partitioningData) override { data = std::move(partitioningData); }
 
         void build() override {}
 
@@ -132,7 +126,7 @@ namespace particlesim
         PartitioningConfig config;
 
     private:
-        PartitionData* data = {};
+        PartitionData data = {};
         mutable vector<uint32_t> neighborBuffer;
     };
 

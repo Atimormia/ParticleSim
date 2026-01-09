@@ -29,6 +29,7 @@ struct PartitioningBenchmarkData
     core::FrameArena arena;
     core::ThreadPoolScheduler scheduler;
     T grid;
+    PartitioningConfig cfg = {};
 
     PartitioningBenchmarkData(size_t range, float cellSize)
         : particles(),
@@ -39,16 +40,15 @@ struct PartitioningBenchmarkData
         particles = generateParticles(range, grid.config.world);
         PartitionData data;
         data.positions = particles;
-        data.arena = arena;
+        data.arena = &arena;
         data.scheduler = &scheduler;
         grid.setData(data);
     }
 
-    static PartitioningConfig makeConfig(float cellSize)
+    const PartitioningConfig& makeConfig(float cellSize)
     {
-        PartitioningConfig cfg;
         cfg.cellSize = cellSize;
-        cfg.world = {0.f, 0.f, 1000.f, 1000.f};
+        cfg.world = {0.f, 0.f, 100.f, 100.f};
         cfg.neighborReserve = 64;
         return cfg;
     }
@@ -89,7 +89,7 @@ static void BM_UniformGridQuery(benchmark::State &state)
 }
 
 //BENCHMARK(BM_UniformGridQuery<UniformGridAllocated>)->Arg(1000)->Arg(10000)->Arg(50000)->Arg(100000);
-BENCHMARK(BM_UniformGridBuild<UniformGridParallel>)->Arg(1000)->Arg(10000)->Arg(50000)->Arg(100000);
+BENCHMARK(BM_UniformGridBuild<UniformGridParallel>)->Arg(10000)->Arg(50000)->Arg(100000);
 BENCHMARK(BM_UniformGridBuild<UniformGrid>)->Arg(1000)->Arg(10000)->Arg(50000)->Arg(100000);
 BENCHMARK(BM_UniformGridQuery<UniformGrid>)->Arg(1000)->Arg(10000)->Arg(50000)->Arg(100000);
 BENCHMARK(BM_UniformGridQuery<UniformGrid, 0.5f>)->Arg(1000)->Arg(10000)->Arg(50000)->Arg(100000);
