@@ -81,6 +81,7 @@ namespace particlesim
         UniformGridAllocated(const PartitioningConfig &cfg) : UniformGrid(cfg) {};
 
         void build() override;
+        span<const uint32_t> queryNeighborhood(uint32_t particleID) override;
         void clear() override;
 
     protected:

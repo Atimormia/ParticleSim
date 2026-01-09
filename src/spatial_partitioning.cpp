@@ -171,6 +171,12 @@ void particlesim::UniformGridAllocated::build()
     }
 }
 
+span<const uint32_t> particlesim::UniformGridAllocated::queryNeighborhood(uint32_t particleID)
+{
+    //todo: same as UniformGrid but with its own buckets
+    return {};
+}
+
 void particlesim::UniformGridAllocated::clear()
 {
     data.arena->reset();
