@@ -81,7 +81,6 @@ namespace particlesim
         UniformGridAllocated(const PartitioningConfig &cfg) : UniformGrid(cfg) {};
 
         void build() override;
-        span<const uint32_t> queryNeighborhood(uint32_t particleID) override;
         void clear() override;
 
     protected:
@@ -97,8 +96,7 @@ namespace particlesim
                 capacity = 0;
             }
         };
-    private:
-        BucketInfo *buckets = nullptr;
+        vector<BucketInfo> buckets;
     };
 
     class UniformGridParallel: public UniformGridAllocated
@@ -106,8 +104,6 @@ namespace particlesim
     public:
         UniformGridParallel(const PartitioningConfig &cfg) : UniformGridAllocated(cfg) {};
         void build() override;
-    private:
-        vector<BucketInfo> bucketsParallel;
     };
 
     class NoPartition final : public ISpatialPartition

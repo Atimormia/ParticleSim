@@ -80,7 +80,6 @@ static void BM_UniformGridQuery(benchmark::State &state)
     {
         for (size_t i = 0; i < N; ++i)
         {
-            //grid.arena.reset();
             benchmark::DoNotOptimize(grid.grid.queryNeighborhood(static_cast<uint32_t>(i)));            
         }
     }
@@ -88,11 +87,14 @@ static void BM_UniformGridQuery(benchmark::State &state)
     state.SetItemsProcessed(N * state.iterations());
 }
 
-//BENCHMARK(BM_UniformGridQuery<UniformGridAllocated>)->Arg(1000)->Arg(10000)->Arg(50000)->Arg(100000);
-BENCHMARK(BM_UniformGridBuild<UniformGridParallel>)->Arg(10000)->Arg(50000)->Arg(100000);
+BENCHMARK(BM_UniformGridBuild<UniformGridParallel>)->Arg(1000)->Arg(10000)->Arg(50000)->Arg(100000);
+BENCHMARK(BM_UniformGridBuild<UniformGridAllocated>)->Arg(1000)->Arg(10000)->Arg(50000)->Arg(100000);
 BENCHMARK(BM_UniformGridBuild<UniformGrid>)->Arg(1000)->Arg(10000)->Arg(50000)->Arg(100000);
+BENCHMARK(BM_UniformGridBuild<NoPartition>)->Arg(1000)->Arg(10000)->Arg(20000);
+
+BENCHMARK(BM_UniformGridQuery<UniformGridParallel>)->Arg(1000)->Arg(10000)->Arg(50000)->Arg(100000);
+BENCHMARK(BM_UniformGridQuery<UniformGridAllocated>)->Arg(1000)->Arg(10000)->Arg(50000)->Arg(100000);
 BENCHMARK(BM_UniformGridQuery<UniformGrid>)->Arg(1000)->Arg(10000)->Arg(50000)->Arg(100000);
 BENCHMARK(BM_UniformGridQuery<UniformGrid, 0.5f>)->Arg(1000)->Arg(10000)->Arg(50000)->Arg(100000);
 BENCHMARK(BM_UniformGridQuery<UniformGrid, 2.f>)->Arg(1000)->Arg(10000)->Arg(50000)->Arg(100000);
-BENCHMARK(BM_UniformGridBuild<NoPartition>)->Arg(1000)->Arg(10000)->Arg(20000);
 BENCHMARK(BM_UniformGridQuery<NoPartition>)->Arg(1000)->Arg(10000)->Arg(20000);
